@@ -252,7 +252,8 @@ describe('check-release-version action', () => {
       } as unknown as ReturnType<typeof getOctokit>);
 
       await import('../src/index');
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await Promise.resolve();
+      await Promise.resolve();
 
       expect(mockSetFailed).toHaveBeenCalledWith('Bad credentials');
     });
@@ -267,7 +268,8 @@ describe('check-release-version action', () => {
       } as unknown as ReturnType<typeof getOctokit>);
 
       await import('../src/index');
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await Promise.resolve();
+      await Promise.resolve();
 
       expect(mockSetFailed).toHaveBeenCalledWith('Network error');
     });
@@ -282,7 +284,8 @@ describe('check-release-version action', () => {
       } as unknown as ReturnType<typeof getOctokit>);
 
       await import('../src/index');
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await Promise.resolve();
+      await Promise.resolve();
 
       expect(mockSetFailed).toHaveBeenCalledWith('An unexpected error occurred');
     });
