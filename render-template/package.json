@@ -1,0 +1,12 @@
+{
+  "name": "@ldk-systems/render-template",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "ncc build src/index.ts -o dist --source-map --license licenses.txt --transpile-only"
+  },
+  "dependencies": {
+    "@actions/core": "^1.10.0",
+    "@ldk-systems/lib": "*"
+  }
+}

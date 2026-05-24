@@ -41,10 +41,11 @@ This is an npm workspaces monorepo of GitHub Actions and reusable workflows targ
 
 ### Workspaces
 
-- **`packages/lib`** — shared internal library (private, not published). Exports XML parsing (`fast-xml-parser`), GitHub API helpers (`@actions/github`), and Handlebars template rendering. Consumed by all three actions via workspace path alias `@ldk-systems/lib`.
+- **`packages/lib`** — shared internal library (private, not published). Exports XML parsing (`fast-xml-parser`), GitHub API helpers (`@actions/github`), and Handlebars template rendering. Consumed by actions via workspace path alias `@ldk-systems/lib`.
 - **`extract-dotnet-version`** — reads a `.csproj` file and outputs `version`, `version-prefix`, `version-suffix` using precedence rules (`Version` > `VersionPrefix-VersionSuffix` > `VersionPrefix`).
 - **`check-release-version`** — queries the GitHub Releases API and outputs `exists: true/false`. Matches both raw and `v`-prefixed tag forms (e.g. `1.0.0` and `v1.0.0`).
 - **`generate-release-notes`** — renders a Handlebars template (inline, file, or bundled default) with merged variables from `template-vars` input and `RELEASE_VAR_*` env vars, then creates a GitHub release.
+- **`render-template`** — renders a Handlebars template (inline or file) with variables from `template-vars` and outputs the result string. Supports comparison helpers (`eq`, `ne`, `gt`, `gte`, `lt`, `lte`) and list iteration (`{{#each}}`); `template-vars` values may be strings, arrays, or objects.
 
 ### Build pipeline
 

@@ -5,6 +5,7 @@
     "extract-dotnet-version",
     "check-release-version",
     "generate-release-notes",
+    "render-template",
     "packages/*"
   ],
   "scripts": {

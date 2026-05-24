@@ -4,6 +4,7 @@
     { "path": "packages/lib" },
     { "path": "extract-dotnet-version" },
     { "path": "check-release-version" },
-    { "path": "generate-release-notes" }
+    { "path": "generate-release-notes" },
+    { "path": "render-template" }
   ]
 }

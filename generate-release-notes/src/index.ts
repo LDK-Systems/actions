@@ -6,6 +6,8 @@ import { resolve, join } from 'path';
 /**
  * Collects environment variables prefixed with RELEASE_VAR_,
  * strips the prefix, and lowercases the remainder as the variable key.
+ *
+ * @returns An object mapping lowercased variable names to their values
  */
 function collectReleaseVarEnv(): Record<string, string> {
   const vars: Record<string, string> = {};
@@ -24,6 +26,11 @@ function collectReleaseVarEnv(): Record<string, string> {
  * 1. Inline `template` input (highest priority)
  * 2. `template-file` input (read from file path)
  * 3. Default bundled template (lowest priority)
+ *
+ * @param templateInput - Inline template string from action input
+ * @param templateFileInput - File path from action input
+ * @returns The resolved template string
+ * @throws Error if template-file is provided but the file does not exist
  */
 function resolveTemplate(templateInput: string, templateFileInput: string): string {
   // 1. Inline template takes precedence

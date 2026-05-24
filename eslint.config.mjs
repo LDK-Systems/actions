@@ -20,6 +20,7 @@ export default tseslint.config(
       'extract-dotnet-version/src/**/*.ts',
       'check-release-version/src/**/*.ts',
       'generate-release-notes/src/**/*.ts',
+      'render-template/src/**/*.ts',
       'packages/lib/src/**/*.ts',
     ],
     languageOptions: {
@@ -36,6 +37,7 @@ export default tseslint.config(
       'extract-dotnet-version/__tests__/**/*.ts',
       'check-release-version/__tests__/**/*.ts',
       'generate-release-notes/__tests__/**/*.ts',
+      'render-template/__tests__/**/*.ts',
       'packages/lib/__tests__/**/*.ts',
     ],
     languageOptions: {
@@ -51,6 +53,7 @@ export default tseslint.config(
       'extract-dotnet-version/src/**/*.ts',
       'check-release-version/src/**/*.ts',
       'generate-release-notes/src/**/*.ts',
+      'render-template/src/**/*.ts',
       'packages/lib/src/**/*.ts',
     ],
     plugins: { jsdoc },

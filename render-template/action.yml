@@ -1,0 +1,19 @@
+name: 'Render Template'
+description: 'Renders a Handlebars template string with provided variables'
+inputs:
+  template:
+    description: 'Inline Handlebars template string (takes precedence over template-file)'
+    required: false
+  template-file:
+    description: 'Path to a Handlebars template file'
+    required: false
+  template-vars:
+    description: 'JSON object of variables for template substitution; values may be strings, arrays, or nested objects'
+    required: false
+    default: '{}'
+outputs:
+  result:
+    description: 'The rendered template output'
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

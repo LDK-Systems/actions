@@ -17,7 +17,7 @@ This file provides guidance to coding agents working in this repository.
 
 - This is an npm workspaces monorepo for GitHub Actions and reusable workflows.
 - `packages/lib` is the shared internal library used by all actions.
-- Each action lives in its own workspace under `check-release-version/`, `extract-dotnet-version/`, and `generate-release-notes/`.
+- Each action lives in its own workspace under `check-release-version/`, `extract-dotnet-version/`, `generate-release-notes/`, and `render-template/`.
 - Each action is bundled into `dist/index.js` with `@vercel/ncc`, and GitHub Actions executes that bundled file from `runs.main` in the corresponding `action.yml`.
 - When changing source in an action or in `packages/lib`, rebuild before committing so `dist/` stays up to date.
 

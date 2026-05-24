@@ -5,4 +5,5 @@ export default defineWorkspace([
   'extract-dotnet-version',
   'check-release-version',
   'generate-release-notes',
+  'render-template',
 ]);
