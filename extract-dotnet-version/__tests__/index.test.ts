@@ -1,9 +1,31 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import * as core from '@actions/core';
-import fs from 'fs';
 
-vi.mock('@actions/core');
-vi.mock('fs');
+vi.mock('@actions/core', () => ({
+  getInput: vi.fn(),
+  setOutput: vi.fn(),
+  setFailed: vi.fn(),
+}));
+
+vi.mock('fs', () => ({
+  existsSync: vi.fn(),
+  readFileSync: vi.fn(),
+}));
+
+vi.mock('@ldk-systems/lib', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@ldk-systems/lib')>();
+  const { setFailed } = await import('@actions/core');
+  return {
+    ...actual,
+    runAction: (fn: () => Promise<void>) => {
+      fn().catch((error: unknown) => {
+        setFailed(error instanceof Error ? error.message : 'An unexpected error occurred');
+      });
+    },
+  };
+});
+
+import * as core from '@actions/core';
+import * as fs from 'fs';
 
 const mockedCore = vi.mocked(core);
 const mockedFs = vi.mocked(fs);
