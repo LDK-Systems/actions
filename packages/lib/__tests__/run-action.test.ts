@@ -18,6 +18,7 @@ describe('runAction', () => {
     const fn = vi.fn().mockResolvedValue(undefined);
     runAction(fn);
     await Promise.resolve();
+    expect(fn).toHaveBeenCalledOnce();
     expect(mockSetFailed).not.toHaveBeenCalled();
   });
 
@@ -25,6 +26,7 @@ describe('runAction', () => {
     const fn = vi.fn().mockRejectedValue(new Error('boom'));
     runAction(fn);
     await Promise.resolve();
+    expect(fn).toHaveBeenCalledOnce();
     expect(mockSetFailed).toHaveBeenCalledWith('boom');
   });
 
@@ -32,6 +34,7 @@ describe('runAction', () => {
     const fn = vi.fn().mockRejectedValue('string rejection');
     runAction(fn);
     await Promise.resolve();
+    expect(fn).toHaveBeenCalledOnce();
     expect(mockSetFailed).toHaveBeenCalledWith('An unexpected error occurred');
   });
 });
