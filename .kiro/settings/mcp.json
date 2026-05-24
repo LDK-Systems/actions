@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "docker-local": {
+      "command": "uvx",
+      "args": ["mcp-server-docker"],
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}
