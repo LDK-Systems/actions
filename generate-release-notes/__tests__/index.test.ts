@@ -1,10 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('@actions/core');
-vi.mock('@ldk-systems/lib', () => ({
-  renderTemplate: vi.fn(),
-  createRelease: vi.fn(),
-}));
+vi.mock('@ldk-systems/lib', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@ldk-systems/lib')>();
+  const { setFailed } = await import('@actions/core');
+  return {
+    ...actual,
+    renderTemplate: vi.fn(),
+    createRelease: vi.fn(),
+    runAction: (fn: () => Promise<void>) => {
+      fn().catch((error: unknown) => {
+        setFailed(error instanceof Error ? error.message : 'An unexpected error occurred');
+      });
+    },
+  };
+});
 vi.mock('fs');
 
 import * as core from '@actions/core';
@@ -271,6 +281,8 @@ describe('generate-release-notes', () => {
     mockedCreateRelease.mockRejectedValue(new Error('Bad credentials'));
 
     await import('../src/index');
+    await Promise.resolve();
+    await Promise.resolve();
 
     expect(mockedCore.setFailed).toHaveBeenCalledWith('Bad credentials');
   });

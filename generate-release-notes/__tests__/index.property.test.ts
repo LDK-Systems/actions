@@ -75,6 +75,19 @@ describe('Property 6: Template variables JSON validation', () => {
         },
       }),
     }));
+
+    vi.doMock('@ldk-systems/lib', async (importOriginal) => {
+      const actual = await importOriginal<typeof import('@ldk-systems/lib')>();
+      const { setFailed: coreSF } = await import('@actions/core');
+      return {
+        ...actual,
+        runAction: (fn: () => Promise<void>) => {
+          fn().catch((error: unknown) => {
+            coreSF(error instanceof Error ? error.message : 'An unexpected error occurred');
+          });
+        },
+      };
+    });
   }
 
   it('valid JSON objects pass validation, invalid JSON and non-object JSON values fail', async () => {
@@ -137,8 +150,9 @@ describe('Property 6: Template variables JSON validation', () => {
 
           await import('../src/index');
 
-          // Allow async run() to complete
-          await new Promise((resolve) => setTimeout(resolve, 0));
+          // Flush the microtask queue for async error paths
+          await Promise.resolve();
+          await Promise.resolve();
 
           if (category === 'valid-object') {
             // Should NOT fail due to template-vars validation
