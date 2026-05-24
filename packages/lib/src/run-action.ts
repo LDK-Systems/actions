@@ -2,6 +2,7 @@ import * as core from '@actions/core';
 
 /**
  * Wraps an action's main function, ensuring all errors are reported via core.setFailed.
+ * @param fn The async action function to execute.
  */
 export function runAction(fn: () => Promise<void>): void {
   fn().catch((error: unknown) => {
