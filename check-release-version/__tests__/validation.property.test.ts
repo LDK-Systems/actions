@@ -27,9 +27,18 @@ vi.mock('@actions/core', () => ({
 // Mock @ldk-systems/lib - releaseExists resolves to false (no release found)
 const mockReleaseExists = vi.fn();
 
-vi.mock('@ldk-systems/lib', () => ({
-  releaseExists: (...args: unknown[]) => mockReleaseExists(...args),
-}));
+vi.mock('@ldk-systems/lib', async (importOriginal) => {
+  // Import the mocked core to use the same instance
+  const { setFailed } = await import('@actions/core');
+  return {
+    releaseExists: (...args: unknown[]) => mockReleaseExists(...args),
+    runAction: (fn: () => Promise<void>) => {
+      fn().catch((error: unknown) => {
+        setFailed(error instanceof Error ? error.message : 'An unexpected error occurred');
+      });
+    },
+  };
+});
 
 /**
  * Determines if a string is a valid owner/repo format:

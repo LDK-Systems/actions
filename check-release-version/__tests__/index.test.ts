@@ -10,6 +10,20 @@ vi.mock('@actions/github', () => ({
   getOctokit: vi.fn(),
 }));
 
+vi.mock('@ldk-systems/lib', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@ldk-systems/lib')>();
+  // Import the mocked core to use the same instance
+  const { setFailed } = await import('@actions/core');
+  return {
+    ...actual,
+    runAction: (fn: () => Promise<void>) => {
+      fn().catch((error: unknown) => {
+        setFailed(error instanceof Error ? error.message : 'An unexpected error occurred');
+      });
+    },
+  };
+});
+
 import * as core from '@actions/core';
 import { getOctokit } from '@actions/github';
 
@@ -238,6 +252,7 @@ describe('check-release-version action', () => {
       } as unknown as ReturnType<typeof getOctokit>);
 
       await import('../src/index');
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       expect(mockSetFailed).toHaveBeenCalledWith('Bad credentials');
     });
@@ -252,6 +267,7 @@ describe('check-release-version action', () => {
       } as unknown as ReturnType<typeof getOctokit>);
 
       await import('../src/index');
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       expect(mockSetFailed).toHaveBeenCalledWith('Network error');
     });
@@ -266,6 +282,7 @@ describe('check-release-version action', () => {
       } as unknown as ReturnType<typeof getOctokit>);
 
       await import('../src/index');
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       expect(mockSetFailed).toHaveBeenCalledWith('An unexpected error occurred');
     });
