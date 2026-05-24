@@ -1,0 +1,175 @@
+name: .NET Build
+
+on:
+  workflow_call:
+    inputs:
+      dotnet-version:
+        required: true
+        type: string
+      project-path:
+        required: true
+        type: string
+      configuration:
+        required: false
+        type: string
+        default: 'Release'
+      run-tests:
+        required: false
+        type: boolean
+        default: true
+      build-docker-image:
+        required: false
+        type: boolean
+        default: false
+      docker-image-name:
+        required: false
+        type: string
+      dockerfile-path:
+        required: false
+        type: string
+        default: './Dockerfile'
+      docker-build-args:
+        required: false
+        type: string
+      docker-push:
+        required: false
+        type: string
+        description: 'Push Docker image to registry when set to "push"'
+      registry-url:
+        required: false
+        type: string
+        description: 'Remote Docker registry URL'
+      docker-platforms:
+        required: false
+        type: string
+        description: 'Comma-separated platform architectures for multi-platform builds'
+      upload-artifacts:
+        required: false
+        type: boolean
+        default: false
+        description: 'Upload build artifacts when true'
+      artifact-name:
+        required: false
+        type: string
+        default: ''
+        description: 'Name for the uploaded artifact bundle (defaults to project name if empty)'
+      artifact-path:
+        required: false
+        type: string
+        description: 'File paths or glob patterns of build outputs to upload as artifacts'
+    secrets:
+      registry-username:
+        required: false
+        description: 'Username for Docker registry authentication'
+      registry-password:
+        required: false
+        description: 'Password for Docker registry authentication'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ inputs.dotnet-version }}
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/Directory.Packages.props') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+
+      - name: Restore dependencies
+        run: dotnet restore ${{ inputs.project-path }}
+
+      - name: Build
+        if: success()
+        run: dotnet build ${{ inputs.project-path }} --configuration ${{ inputs.configuration }} --no-restore
+
+      - name: Test
+        if: success() && inputs.run-tests == true
+        run: dotnet test ${{ inputs.project-path }} --configuration ${{ inputs.configuration }} --no-build
+
+      - name: Validate Docker inputs
+        if: success() && inputs.build-docker-image == true
+        run: |
+          if [ -z "${{ inputs.docker-image-name }}" ]; then
+            echo "::error::docker-image-name is required when build-docker-image is enabled"
+            exit 1
+          fi
+
+      - name: Validate registry credentials
+        if: success() && inputs.build-docker-image == true && inputs.docker-push == 'push'
+        run: |
+          if [ -z "${{ inputs.registry-url }}" ]; then
+            echo "::error::registry-url is required when docker-push is set to push"
+            exit 1
+          fi
+          if [ -z "${{ secrets.registry-username }}" ]; then
+            echo "::error::registry-username secret is required when docker-push is set to push"
+            exit 1
+          fi
+          if [ -z "${{ secrets.registry-password }}" ]; then
+            echo "::error::registry-password secret is required when docker-push is set to push"
+            exit 1
+          fi
+
+      - name: Set up QEMU
+        if: success() && inputs.build-docker-image == true && inputs.docker-platforms != ''
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        if: success() && inputs.build-docker-image == true && inputs.docker-image-name != ''
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker registry
+        if: success() && inputs.build-docker-image == true && inputs.docker-push == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ inputs.registry-url }}
+          username: ${{ secrets.registry-username }}
+          password: ${{ secrets.registry-password }}
+
+      - name: Extract .NET version
+        if: success() && inputs.build-docker-image == true
+        id: extract-version
+        uses: ./extract-dotnet-version
+        with:
+          project-file: ${{ inputs.project-path }}
+
+      - name: Build Docker image
+        if: success() && inputs.build-docker-image == true && inputs.docker-image-name != ''
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ inputs.dockerfile-path }}
+          push: ${{ inputs.docker-push == 'push' }}
+          tags: ${{ inputs.docker-image-name }}
+          build-args: |
+            VERSION=${{ steps.extract-version.outputs.version }}
+            ${{ inputs.docker-build-args }}
+          platforms: ${{ inputs.docker-platforms }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Validate artifact inputs
+        if: success() && inputs.upload-artifacts == true
+        run: |
+          if [ -z "${{ inputs.artifact-path }}" ]; then
+            echo "::error::artifact-path is required when upload-artifacts is enabled"
+            exit 1
+          fi
+
+      - name: Upload build artifacts
+        if: success() && inputs.upload-artifacts == true && inputs.artifact-path != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact-name || 'build-artifacts' }}
+          path: ${{ inputs.artifact-path }}

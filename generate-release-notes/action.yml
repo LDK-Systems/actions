@@ -1,0 +1,30 @@
+name: 'Generate Release Notes'
+description: 'Generates release notes from a template and creates a GitHub release'
+inputs:
+  template:
+    description: 'Inline Handlebars template string for rendering release notes (takes precedence over template-file)'
+    required: false
+  template-file:
+    description: 'Path to a Handlebars template file for rendering release notes (used when no inline template is provided)'
+    required: false
+  template-vars:
+    description: 'JSON string of key-value pairs for template substitution'
+    required: false
+    default: '{}'
+  version:
+    description: 'The version string for the release tag and name'
+    required: true
+  repository:
+    description: 'The target repository in owner/repo format'
+    required: true
+  token:
+    description: 'GitHub token for API authentication'
+    required: false
+outputs:
+  release-url:
+    description: 'The URL of the created GitHub release'
+  release-notes:
+    description: 'The rendered release notes body'
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

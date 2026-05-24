@@ -1,0 +1,16 @@
+name: 'Extract .NET Version'
+description: 'Extracts version information from .NET project files (.csproj)'
+inputs:
+  project-file:
+    description: 'Path to the .NET project file (.csproj)'
+    required: true
+outputs:
+  version:
+    description: 'The extracted version string'
+  version-prefix:
+    description: 'The version prefix value'
+  version-suffix:
+    description: 'The version suffix value'
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

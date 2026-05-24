@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+        description: 'The release version tag to create'
+      release-notes-template:
+        required: true
+        type: string
+        description: 'The template text for generating release notes'
+      template-vars:
+        required: false
+        type: string
+        default: '{}'
+        description: 'JSON string of key-value pairs for template substitution'
+      artifacts:
+        required: false
+        type: string
+        default: ''
+        description: 'File paths or glob patterns of build artifacts to attach to the release'
+    secrets:
+      token:
+        required: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout actions repo
+        uses: actions/checkout@v4
+        with:
+          repository: LDK-Systems/actions
+
+      - name: Check release version
+        id: check-version
+        uses: ./check-release-version
+        with:
+          version: ${{ inputs.version }}
+          repository: ${{ github.repository }}
+          token: ${{ secrets.token || github.token }}
+
+      - name: Fail if version already exists
+        if: steps.check-version.outputs.exists == 'true'
+        run: |
+          echo "::error::Version ${{ inputs.version }} already exists in ${{ github.repository }}"
+          exit 1
+
+      - name: Generate release notes
+        if: steps.check-version.outputs.exists == 'false'
+        uses: ./generate-release-notes
+        with:
+          template: ${{ inputs.release-notes-template }}
+          template-vars: ${{ inputs.template-vars }}
+          version: ${{ inputs.version }}
+          repository: ${{ github.repository }}
+          token: ${{ secrets.token || github.token }}
+
+      - name: Upload release artifacts
+        if: steps.check-version.outputs.exists == 'false' && inputs.artifacts != '' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.token || github.token }}
+        run: gh release upload ${{ inputs.version }} ${{ inputs.artifacts }} --repo ${{ github.repository }}
