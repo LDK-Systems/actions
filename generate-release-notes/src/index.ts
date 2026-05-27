@@ -102,7 +102,9 @@ async function run(): Promise<void> {
     body = renderTemplate(template, templateVars);
   } catch (error) {
     core.setFailed(
-      error instanceof Error ? `Template syntax error: ${error.message}` : 'Template rendering failed due to a syntax error',
+      error instanceof Error
+        ? `Template syntax error: ${error.message}`
+        : 'Template rendering failed due to a syntax error',
     );
     return;
   }

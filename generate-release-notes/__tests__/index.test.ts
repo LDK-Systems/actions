@@ -100,7 +100,10 @@ describe('generate-release-notes', () => {
 
     await import('../src/index');
 
-    expect(mockedCore.setOutput).toHaveBeenCalledWith('release-notes', 'Rendered release body content');
+    expect(mockedCore.setOutput).toHaveBeenCalledWith(
+      'release-notes',
+      'Rendered release body content',
+    );
   });
 
   it('uses inline template input when provided (precedence over template-file)', async () => {
@@ -113,10 +116,7 @@ describe('generate-release-notes', () => {
 
     // Should use inline template, NOT read from file
     expect(mockedReadFileSync).not.toHaveBeenCalled();
-    expect(mockedRenderTemplate).toHaveBeenCalledWith(
-      '## Inline {{version}}',
-      expect.any(Object),
-    );
+    expect(mockedRenderTemplate).toHaveBeenCalledWith('## Inline {{version}}', expect.any(Object));
     expect(mockedCore.setFailed).not.toHaveBeenCalled();
   });
 
@@ -131,7 +131,10 @@ describe('generate-release-notes', () => {
     await import('../src/index');
 
     expect(mockedExistsSync).toHaveBeenCalled();
-    expect(mockedReadFileSync).toHaveBeenCalledWith(expect.stringContaining('custom-template.hbs'), 'utf-8');
+    expect(mockedReadFileSync).toHaveBeenCalledWith(
+      expect.stringContaining('custom-template.hbs'),
+      'utf-8',
+    );
     expect(mockedRenderTemplate).toHaveBeenCalledWith(
       '# File Template {{version}}',
       expect.any(Object),
@@ -153,10 +156,7 @@ describe('generate-release-notes', () => {
       expect.stringContaining('default-template.hbs'),
       'utf-8',
     );
-    expect(mockedRenderTemplate).toHaveBeenCalledWith(
-      '# Default {{version}}',
-      expect.any(Object),
-    );
+    expect(mockedRenderTemplate).toHaveBeenCalledWith('# Default {{version}}', expect.any(Object));
     expect(mockedCore.setFailed).not.toHaveBeenCalled();
   });
 
