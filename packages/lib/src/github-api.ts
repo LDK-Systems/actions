@@ -21,7 +21,7 @@ export interface ReleaseInfo {
 export async function getReleases(
   token: string,
   owner: string,
-  repo: string
+  repo: string,
 ): Promise<ReleaseInfo[]> {
   const octokit = getOctokit(token);
 
@@ -69,14 +69,12 @@ export async function releaseExists(
   token: string,
   owner: string,
   repo: string,
-  version: string
+  version: string,
 ): Promise<boolean> {
   const releases = await getReleases(token, owner, repo);
 
   const vPrefixed = version.startsWith('v') ? version : `v${version}`;
   const raw = version.startsWith('v') ? version.slice(1) : version;
 
-  return releases.some(
-    (release) => release.tagName === raw || release.tagName === vPrefixed
-  );
+  return releases.some((release) => release.tagName === raw || release.tagName === vPrefixed);
 }

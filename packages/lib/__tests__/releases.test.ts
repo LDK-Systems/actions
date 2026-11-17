@@ -125,7 +125,7 @@ describe('createRelease', () => {
         tag: 'v1.0.0',
         name: 'Release',
         body: 'Notes',
-      })
+      }),
     ).rejects.toThrow('Bad credentials');
   });
 
@@ -146,7 +146,7 @@ describe('createRelease', () => {
         tag: 'v1.0.0',
         name: 'Release',
         body: 'Notes',
-      })
+      }),
     ).rejects.toThrow('Network error');
   });
 });

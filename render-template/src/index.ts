@@ -64,7 +64,9 @@ async function run(): Promise<void> {
       result = renderTemplate(template, templateVars);
     } catch (error) {
       core.setFailed(
-        error instanceof Error ? `Template syntax error: ${error.message}` : 'Template rendering failed',
+        error instanceof Error
+          ? `Template syntax error: ${error.message}`
+          : 'Template rendering failed',
       );
       return;
     }

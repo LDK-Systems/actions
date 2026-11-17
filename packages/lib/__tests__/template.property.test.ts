@@ -22,10 +22,18 @@ describe('Property 3: Template rendering substitution correctness', () => {
   // We also avoid prototype property names (toString, constructor, etc.) that
   // Handlebars blocks access to for security reasons.
   const RESERVED_KEYS = new Set([
-    'toString', 'valueOf', 'constructor', 'hasOwnProperty',
-    'isPrototypeOf', 'propertyIsEnumerable', 'toLocaleString',
-    '__proto__', '__defineGetter__', '__defineSetter__',
-    '__lookupGetter__', '__lookupSetter__',
+    'toString',
+    'valueOf',
+    'constructor',
+    'hasOwnProperty',
+    'isPrototypeOf',
+    'propertyIsEnumerable',
+    'toLocaleString',
+    '__proto__',
+    '__defineGetter__',
+    '__defineSetter__',
+    '__lookupGetter__',
+    '__lookupSetter__',
   ]);
 
   const wordKeyArb = fc

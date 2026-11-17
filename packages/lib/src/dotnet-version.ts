@@ -31,7 +31,9 @@ export function parseDotnetVersion(output: string): DotnetVersion {
   try {
     parsed = JSON.parse(output.trim().replace(/^\uFEFF/, ''));
   } catch {
-    throw new Error('MSBuild did not return valid property JSON. Check the SDK and project evaluation.');
+    throw new Error(
+      'MSBuild did not return valid property JSON. Check the SDK and project evaluation.',
+    );
   }
 
   const properties = (parsed as { Properties?: unknown } | null)?.Properties;
@@ -61,22 +63,22 @@ export async function evaluateDotnetVersion(options: DotnetVersionOptions): Prom
   const workspace = await realpath(options.workspace);
   const project = await realpath(resolve(workspace, options.projectFile));
   const fromWorkspace = relative(workspace, project);
-  if (
-    isAbsolute(fromWorkspace) ||
-    fromWorkspace === '..' ||
-    fromWorkspace.startsWith('..' + sep)
-  ) {
+  if (isAbsolute(fromWorkspace) || fromWorkspace === '..' || fromWorkspace.startsWith('..' + sep)) {
     throw new Error('Project file must be inside the checked-out workspace.');
   }
-  if (!['.csproj', '.fsproj', '.vbproj'].includes(extname(project).toLowerCase()) ||
-      !(await stat(project)).isFile()) {
+  if (
+    !['.csproj', '.fsproj', '.vbproj'].includes(extname(project).toLowerCase()) ||
+    !(await stat(project)).isFile()
+  ) {
     throw new Error('Expected a .csproj, .fsproj or .vbproj file.');
   }
 
   // MSBuild property arguments allow separators; accept only simple values to avoid switch/property injection.
   const safeValue = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
-  if (!safeValue.test(options.configuration) ||
-      (options.targetFramework && !safeValue.test(options.targetFramework))) {
+  if (
+    !safeValue.test(options.configuration) ||
+    (options.targetFramework && !safeValue.test(options.targetFramework))
+  ) {
     throw new Error('Invalid configuration or target-framework input.');
   }
   const args = [
@@ -101,7 +103,9 @@ export async function evaluateDotnetVersion(options: DotnetVersionOptions): Prom
       env: { ...process.env, DOTNET_NOLOGO: 'true', DOTNET_CLI_TELEMETRY_OPTOUT: 'true' },
     }));
   } catch {
-    throw new Error('MSBuild evaluation failed. Ensure the selected SDK (8+), imports and project are available.');
+    throw new Error(
+      'MSBuild evaluation failed. Ensure the selected SDK (8+), imports and project are available.',
+    );
   }
   return parseDotnetVersion(stdout);
 }

@@ -56,7 +56,13 @@ describe('check-dotnet-release', () => {
   it('outputs metadata and the matching release details', async () => {
     mocks.findReleaseByTag.mockResolvedValue({
       tagExists: true,
-      release: { id: 42, url: 'https://example.test/release', name: 'Routing', draft: false, prerelease: true },
+      release: {
+        id: 42,
+        url: 'https://example.test/release',
+        name: 'Routing',
+        draft: false,
+        prerelease: true,
+      },
     });
     await import('../src/index');
     await mocks.completion;
@@ -65,7 +71,11 @@ describe('check-dotnet-release', () => {
     expect(mocks.evaluateDotnetVersion).toHaveBeenCalledWith(
       expect.objectContaining({ configuration: 'Release', targetFramework: 'net10.0' }),
     );
-    expect(mocks.findReleaseByTag).toHaveBeenCalledWith('test-token', 'example/repo', 'routing/v2.4.0');
+    expect(mocks.findReleaseByTag).toHaveBeenCalledWith(
+      'test-token',
+      'example/repo',
+      'routing/v2.4.0',
+    );
     expect(Object.fromEntries(mocks.setOutput.mock.calls)).toEqual({
       version: '2.4.0',
       'version-prefix': '2.4.0',

@@ -19,8 +19,12 @@ export interface ReleaseLookup {
  */
 export function parseRepository(repository: string): { owner: string; repo: string } {
   const parts = repository.trim().split('/');
-  if (parts.length !== 2 || !/^[A-Za-z0-9-]+$/.test(parts[0]) ||
-      !/^[A-Za-z0-9_.-]+$/.test(parts[1]) || ['.', '..'].includes(parts[1])) {
+  if (
+    parts.length !== 2 ||
+    !/^[A-Za-z0-9-]+$/.test(parts[0]) ||
+    !/^[A-Za-z0-9_.-]+$/.test(parts[1]) ||
+    ['.', '..'].includes(parts[1])
+  ) {
     throw new Error('Input "repository" must be in owner/repo format.');
   }
   return { owner: parts[0], repo: parts[1] };
@@ -37,9 +41,13 @@ export function createReleaseTag(version: string, prefix: string): string {
     throw new Error('Expected a numeric .NET version, optionally with prerelease/build metadata.');
   }
   const tag = prefix + version;
-  if (!/^[A-Za-z0-9_][A-Za-z0-9._/+\-]*$/.test(tag) || tag.includes('..') ||
-      tag.split('/').some((part) => !part || part.startsWith('.') ||
-        part.endsWith('.') || part.endsWith('.lock'))) {
+  if (
+    !/^[A-Za-z0-9_][A-Za-z0-9._/+\-]*$/.test(tag) ||
+    tag.includes('..') ||
+    tag
+      .split('/')
+      .some((part) => !part || part.startsWith('.') || part.endsWith('.') || part.endsWith('.lock'))
+  ) {
     throw new Error('The release tag prefix and version do not form a supported Git tag.');
   }
   return tag;
@@ -88,8 +96,12 @@ export async function findReleaseByTag(
     const response = await octokit.rest.git.getRef({ owner, repo, ref: 'tags/' + tag });
     tagExists = response.data.ref === 'refs/tags/' + tag;
   } catch (error: unknown) {
-    if (typeof error !== 'object' || error === null || !('status' in error) ||
-        error.status !== 404) {
+    if (
+      typeof error !== 'object' ||
+      error === null ||
+      !('status' in error) ||
+      error.status !== 404
+    ) {
       throw error;
     }
   }

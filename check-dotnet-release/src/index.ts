@@ -1,5 +1,10 @@
 import * as core from '@actions/core';
-import { createReleaseTag, evaluateDotnetVersion, findReleaseByTag, runAction } from '@ldk-systems/lib';
+import {
+  createReleaseTag,
+  evaluateDotnetVersion,
+  findReleaseByTag,
+  runAction,
+} from '@ldk-systems/lib';
 
 /**
  * Evaluates the project and publishes read-only release lookup outputs.
@@ -37,7 +42,9 @@ async function run(): Promise<void> {
   core.setOutput('release-name', release?.name ?? '');
   core.setOutput('draft', release ? String(release.draft) : '');
   core.setOutput('prerelease', release ? String(release.prerelease) : '');
-  core.info(release ? 'A matching GitHub release exists.' : 'No matching GitHub release is visible.');
+  core.info(
+    release ? 'A matching GitHub release exists.' : 'No matching GitHub release is visible.',
+  );
 }
 
 runAction(run);
