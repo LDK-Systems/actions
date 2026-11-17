@@ -51,3 +51,9 @@ This file provides guidance to coding agents working in this repository.
 - CI runs on PRs into main and pushes to main. The change detector discovers JavaScript action workspaces from metadata and uses dorny/paths-filter to create a JSON build matrix. Changes to packages/**, root dependency/toolchain/config files and build scripts trigger all actions. Action-local changes trigger only the affected actions.
 - Targeted local rebuild: `npm run clean:dist -- check-dotnet-release`, `npm run build --workspace check-dotnet-release`, commit dist, then `npm run check:dist -- check-dotnet-release`. Build every affected consumer for shared changes.
 - CI builds are read-only and reject missing/stale generated files. Do not auto-commit generated code to PRs/main or bypass failing security checks. Use the stable CI result job as the branch protection check if configured.
+
+## Dependency security
+
+- Keep the npm audit gate at moderate; never bypass security checks or apply unreviewed `npm audit fix --force`. Upgrade direct dependencies and compatible transitive versions deliberately, review the lockfile and regenerate every ncc bundle after shared dependency changes.
+- All JavaScript action runtimes use Node 24. Preserve ESM imports for the ncc webpack bundler; do not replace ncc with another bundler without review. Test executable distributions, not just TypeScript source.
+- Vitest uses a root `vitest.config.ts` with `test.projects`, named workspace configs and root-level coverage thresholds. Keep the coverage provider on the same version as Vitest.

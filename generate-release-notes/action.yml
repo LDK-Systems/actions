@@ -26,5 +26,5 @@ outputs:
   release-notes:
     description: 'The rendered release notes body'
 runs:
-  using: 'node20'
+  using: 'node24'
   main: 'dist/index.js'

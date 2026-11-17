@@ -208,7 +208,7 @@ Reusable workflows live in [`.github/workflows`](.github/workflows):
 
 ## Development
 
-Install [Volta](https://volta.sh/) first. The root package.json pins Node.js 24.22.3 and npm 11.19.1. All JavaScript workspaces inherit those pins via volta.extends; the GitHub runner's action runtime is still set independently by runs.using. CI installs the same toolchain using volta-cli/action.
+Install [Volta](https://volta.sh/) first. The root package.json pins Node.js 24.22.3 and npm 11.19.1. All JavaScript workspaces inherit those pins via volta.extends; the GitHub runner's action runtime is set to `node24` in each JavaScript action's `runs.using`. CI installs the same toolchain using volta-cli/action.
 
 Install dependencies:
 
@@ -270,3 +270,7 @@ npm run check:dist -- check-dotnet-release
 ```
 
 Run `npm run test:ci-tools` to validate the workspace discovery and filter-generation helpers. A new JavaScript action is automatically included when its root-level directory has action metadata with a Node runtime and a private package with a build script registered in root workspaces. Update tests/typecheck/lint configuration as appropriate.
+
+### Dependency security
+
+Keep `npm audit --audit-level=moderate` passing. Upgrade direct dependencies intentionally, review `package-lock.json`, and rebuild all committed distributions after dependency changes. Vitest 5 uses `test.projects` in the root `vitest.config.ts` and a matching V8 coverage provider. TypeScript retains ES imports for ncc to bundle ESM dependencies into the standalone action entrypoints.

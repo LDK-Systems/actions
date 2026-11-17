@@ -14,14 +14,14 @@ npm run build
 # Run all tests across all workspaces
 npm test
 
-# Run tests with coverage (80% line coverage threshold per workspace)
+# Run tests with coverage (80% global line coverage threshold)
 npm run test:coverage
 
 # Run a single workspace's tests
 npx vitest run --project check-release-version
 npx vitest run --project extract-dotnet-version
 npx vitest run --project generate-release-notes
-npx vitest run --project packages/lib
+npx vitest run --project lib
 
 # Test CI workspace discovery and selection
 npm run test:ci-tools
@@ -40,7 +40,7 @@ npm run format
 
 ## Architecture
 
-This is an npm workspaces monorepo of GitHub Actions and reusable workflows using Volta-pinned Node.js 24 and npm. Existing action runtime declarations remain independent of the developer toolchain.
+This is an npm workspaces monorepo of GitHub Actions and reusable workflows using Volta-pinned Node.js 24 and npm. All JavaScript action runtime declarations target node24; the developer toolchain remains independently pinned via Volta.
 
 ### Workspaces
 
@@ -72,3 +72,5 @@ Tests live in `__tests__/` alongside each workspace. Vitest is used with `fast-c
 - `src/` files use TypeScript project references (`tsconfig.json` per workspace extends `tsconfig.base.json`). Test files intentionally sit outside `tsconfig include` and are compiled by Vitest's own transform.
 
 CI uses dorny/paths-filter and a dynamic action matrix for PRs into main and pushes to main. See AGENTS.md for the Volta inheritance, shared-path fan-out, and committed bundle verification requirements.
+
+Use Vitest 5 root test.projects and matching coverage packages. Keep ESM imports for ncc, update the lockfile through npm, and regenerate all committed distributions after dependency changes. Do not bypass npm audit or use forced fixes without review.

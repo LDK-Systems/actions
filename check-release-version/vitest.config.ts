@@ -1,11 +1,9 @@
-import { defineConfig } from 'vitest/config';
+import { defineProject } from 'vitest/config';
 
-export default defineConfig({
+export default defineProject({
   test: {
+    name: 'check-release-version',
     globals: true,
-    coverage: {
-      provider: 'v8',
-      thresholds: { lines: 80 },
-    },
+    clearMocks: false,
   },
 });

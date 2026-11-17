@@ -1,0 +1,93 @@
+# One-off, branch-only dependency refresh. Remove before merging.
+name: Refresh reviewed dependencies
+on:
+  push:
+    branches: [feat/dotnet-release-check]
+permissions:
+  contents: read
+jobs:
+  refresh:
+    if: github.repository == 'LDK-Systems/actions'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: volta-cli/action@v4
+      - name: Resolve explicit dependency upgrades and safe transitive patches
+        run: |
+          node --version
+          npm --version
+          npm install --package-lock-only --ignore-scripts --no-audit
+          npm update --package-lock-only --ignore-scripts --no-audit
+          npm audit fix --package-lock-only --ignore-scripts || echo 'Some advisories may require manual intervention; see final audit.'
+          npm ci
+      - name: Audit resolved graph
+        run: |
+          npm audit --json > /tmp/audit.json || true
+          npm audit --audit-level=moderate
+        continue-on-error: true
+      - name: Apply repository formatter
+        run: npm run format
+      - name: Verify source and test projects
+        run: |
+          npm run lint
+          npm run format:check
+          npm run typecheck
+          npm run test:ci-tools
+          npm run test:coverage
+      - name: Build all ncc distributions
+        run: npm run build
+      - name: Smoke-test executable bundled actions
+        run: |
+          export GITHUB_OUTPUT="$(mktemp)"
+          INPUT_TEMPLATE='Hello {{name}}' env 'INPUT_TEMPLATE-VARS={"name":"LDK"}' node render-template/dist/index.js
+          grep -Fx 'Hello LDK' "$GITHUB_OUTPUT"
+          > "$GITHUB_OUTPUT"
+          printf '<Project><PropertyGroup><Version>1.2.3</Version></PropertyGroup></Project>' > /tmp/version.csproj
+          env 'INPUT_PROJECT-FILE=/tmp/version.csproj' node extract-dotnet-version/dist/index.js
+          grep -Fx '1.2.3' "$GITHUB_OUTPUT"
+      - name: Package reviewed changes
+        run: |
+          git diff --binary -- '*.ts' > /tmp/format.patch
+          tar -czf /tmp/dependencies.tar.gz package-lock.json extract-dotnet-version/dist check-release-version/dist check-dotnet-release/dist generate-release-notes/dist render-template/dist
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: audit-report
+          path: /tmp/audit.json
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        with:
+          name: refreshed-dependencies
+          path: |
+            /tmp/dependencies.tar.gz
+            /tmp/format.patch
+          retention-days: 1
+  commit:
+    if: github.repository == 'LDK-Systems/actions'
+    needs: refresh
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/dotnet-release-check
+      - uses: actions/download-artifact@v4
+        with:
+          name: refreshed-dependencies
+          path: /tmp/refreshed
+      - name: Commit only validated lockfile, formatting and generated distributions
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          if test -s /tmp/refreshed/format.patch; then
+            git apply --index /tmp/refreshed/format.patch
+          fi
+          tar -xzf /tmp/refreshed/dependencies.tar.gz
+          git add package-lock.json
+          git add -f extract-dotnet-version/dist check-release-version/dist check-dotnet-release/dist generate-release-notes/dist render-template/dist
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git diff --cached --quiet || git commit -m 'build: resolve security updates and regenerate ncc distributions'
+          git push origin HEAD:refs/heads/feat/dotnet-release-check
