@@ -27,7 +27,7 @@ vi.mock('@actions/core', () => ({
 // Mock @ldk-systems/lib - releaseExists resolves to false (no release found)
 const mockReleaseExists = vi.fn();
 
-vi.mock('@ldk-systems/lib', async (importOriginal) => {
+vi.mock('@ldk-systems/lib', async () => {
   // Import the mocked core to use the same instance
   const { setFailed } = await import('@actions/core');
   return {

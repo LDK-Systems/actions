@@ -42,7 +42,7 @@ export function createReleaseTag(version: string, prefix: string): string {
   }
   const tag = prefix + version;
   if (
-    !/^[A-Za-z0-9_][A-Za-z0-9._/+\-]*$/.test(tag) ||
+    !/^[A-Za-z0-9_][A-Za-z0-9._/+-]*$/.test(tag) ||
     tag.includes('..') ||
     tag
       .split('/')
