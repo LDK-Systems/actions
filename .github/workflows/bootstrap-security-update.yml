@@ -18,8 +18,9 @@ jobs:
         run: |
           node --version
           npm --version
+          # Major peer upgrades require resolving the mutually compatible graph together.
+          rm package-lock.json
           npm install --package-lock-only --ignore-scripts --no-audit
-          npm update --package-lock-only --ignore-scripts --no-audit
           npm audit fix --package-lock-only --ignore-scripts || echo 'Some advisories may require manual intervention; see final audit.'
           npm ci
       - name: Audit resolved graph
