@@ -55,20 +55,21 @@ async function runFileVersion(source: 'dotnet' | 'npm'): Promise<void> {
   }
   core.setSecret(token);
 
-  const metadata = source === 'dotnet'
-    ? await evaluateDotnetVersion({
-        workspace,
-        projectFile: path,
-        configuration: core.getInput('configuration') || 'Release',
-        targetFramework: core.getInput('target-framework') || undefined,
-      })
-    : await readNpmVersion(workspace, path || 'package.json').then((pkg) => ({
-        version: pkg.version,
-        versionPrefix: '',
-        versionSuffix: '',
-        packageVersion: pkg.version,
-        packageName: pkg.packageName,
-      }));
+  const metadata =
+    source === 'dotnet'
+      ? await evaluateDotnetVersion({
+          workspace,
+          projectFile: path,
+          configuration: core.getInput('configuration') || 'Release',
+          targetFramework: core.getInput('target-framework') || undefined,
+        })
+      : await readNpmVersion(workspace, path || 'package.json').then((pkg) => ({
+          version: pkg.version,
+          versionPrefix: '',
+          versionSuffix: '',
+          packageVersion: pkg.version,
+          packageName: pkg.packageName,
+        }));
 
   const tag = createReleaseTag(metadata.version, prefix);
   const result = await findReleaseByTag(token, repository, tag);
@@ -84,7 +85,9 @@ async function runFileVersion(source: 'dotnet' | 'npm'): Promise<void> {
   for (const [name, value] of Object.entries(outputs)) {
     core.setOutput(name, value);
   }
-  core.info(result.release ? 'A matching GitHub release exists.' : 'No matching GitHub release is visible.');
+  core.info(
+    result.release ? 'A matching GitHub release exists.' : 'No matching GitHub release is visible.',
+  );
 }
 
 /** Dispatches the action according to the version-source input. */

@@ -9859,7 +9859,7 @@ const buildConnector = __nccwpck_require__(6962)
 const MockClient = __nccwpck_require__(9271)
 const MockAgent = __nccwpck_require__(2107)
 const MockPool = __nccwpck_require__(2646)
-const mockErrors = __nccwpck_require__(3808)
+const mockErrors = __nccwpck_require__(1427)
 const RetryHandler = __nccwpck_require__(2406)
 const { getGlobalDispatcher, setGlobalDispatcher } = __nccwpck_require__(5319)
 const DecoratorHandler = __nccwpck_require__(6037)
@@ -20518,7 +20518,7 @@ module.exports = MockClient
 
 /***/ }),
 
-/***/ 3808:
+/***/ 1427:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
@@ -20873,7 +20873,7 @@ module.exports = {
 "use strict";
 
 
-const { MockNotMatchedError } = __nccwpck_require__(3808)
+const { MockNotMatchedError } = __nccwpck_require__(1427)
 const {
   kDispatches,
   kMockAgent,
@@ -39744,7 +39744,7 @@ var io_util_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _
 };
 
 
-const { chmod, copyFile, lstat, mkdir, open: io_util_open, readdir, rename, rm, rmdir, stat: io_util_stat, symlink, unlink } = external_fs_.promises;
+const { chmod, copyFile, lstat, mkdir, open: io_util_open, readdir, rename, rm, rmdir, stat, symlink, unlink } = external_fs_.promises;
 // export const {open} = 'fs'
 const IS_WINDOWS = process.platform === 'win32';
 /**
@@ -39775,7 +39775,7 @@ const READONLY = external_fs_.constants.O_RDONLY;
 function exists(fsPath) {
     return io_util_awaiter(this, void 0, void 0, function* () {
         try {
-            yield io_util_stat(fsPath);
+            yield stat(fsPath);
         }
         catch (err) {
             if (err.code === 'ENOENT') {
@@ -39788,7 +39788,7 @@ function exists(fsPath) {
 }
 function isDirectory(fsPath_1) {
     return io_util_awaiter(this, arguments, void 0, function* (fsPath, useStat = false) {
-        const stats = useStat ? yield io_util_stat(fsPath) : yield lstat(fsPath);
+        const stats = useStat ? yield stat(fsPath) : yield lstat(fsPath);
         return stats.isDirectory();
     });
 }
@@ -39818,7 +39818,7 @@ function tryGetExecutablePath(filePath, extensions) {
         let stats = undefined;
         try {
             // test file exists
-            stats = yield io_util_stat(filePath);
+            stats = yield stat(filePath);
         }
         catch (err) {
             if (err.code !== 'ENOENT') {
@@ -39846,7 +39846,7 @@ function tryGetExecutablePath(filePath, extensions) {
             filePath = originalFilePath + extension;
             stats = undefined;
             try {
-                stats = yield io_util_stat(filePath);
+                stats = yield stat(filePath);
             }
             catch (err) {
                 if (err.code !== 'ENOENT') {
@@ -40997,7 +40997,7 @@ function exportVariable(name, val) {
  * ```
  */
 function core_setSecret(secret) {
-    issueCommand('add-mask', {}, secret);
+    command_issueCommand('add-mask', {}, secret);
 }
 /**
  * Prepends inputPath to the PATH (for this action and future actions)
@@ -41150,7 +41150,7 @@ function notice(message, properties = {}) {
  * @param message info message
  */
 function info(message) {
-    process.stdout.write(message + os.EOL);
+    process.stdout.write(message + external_os_namespaceObject.EOL);
 }
 /**
  * Begin an output group.
@@ -43126,8 +43126,8 @@ function withCustomRequest(customRequest) {
 ;// CONCATENATED MODULE: ../node_modules/@octokit/auth-token/dist-bundle/index.js
 // pkg/dist-src/is-jwt.js
 var b64url = "(?:[a-zA-Z0-9_-]+)";
-var dist_bundle_sep = "\\.";
-var jwtRE = new RegExp(`^${b64url}${dist_bundle_sep}${b64url}${dist_bundle_sep}${b64url}$`);
+var sep = "\\.";
+var jwtRE = new RegExp(`^${b64url}${sep}${b64url}${sep}${b64url}$`);
 var isJWT = jwtRE.test.bind(jwtRE);
 
 // pkg/dist-src/auth.js
@@ -46422,14 +46422,14 @@ function parseDotnetVersion(output) {
  * @returns Evaluation-time version metadata
  */
 async function evaluateDotnetVersion(options) {
-    const workspace = await realpath(options.workspace);
-    const project = await realpath(resolve(workspace, options.projectFile));
-    const fromWorkspace = relative(workspace, project);
-    if (isAbsolute(fromWorkspace) || fromWorkspace === '..' || fromWorkspace.startsWith('..' + sep)) {
+    const workspace = await (0,promises_namespaceObject.realpath)(options.workspace);
+    const project = await (0,promises_namespaceObject.realpath)((0,external_node_path_namespaceObject.resolve)(workspace, options.projectFile));
+    const fromWorkspace = (0,external_node_path_namespaceObject.relative)(workspace, project);
+    if ((0,external_node_path_namespaceObject.isAbsolute)(fromWorkspace) || fromWorkspace === '..' || fromWorkspace.startsWith('..' + external_node_path_namespaceObject.sep)) {
         throw new Error('Project file must be inside the checked-out workspace.');
     }
-    if (!['.csproj', '.fsproj', '.vbproj'].includes(extname(project).toLowerCase()) ||
-        !(await stat(project)).isFile()) {
+    if (!['.csproj', '.fsproj', '.vbproj'].includes((0,external_node_path_namespaceObject.extname)(project).toLowerCase()) ||
+        !(await (0,promises_namespaceObject.stat)(project)).isFile()) {
         throw new Error('Expected a .csproj, .fsproj or .vbproj file.');
     }
     // MSBuild property arguments allow separators; accept only simple values to avoid switch/property injection.
@@ -46451,7 +46451,7 @@ async function evaluateDotnetVersion(options) {
     let stdout;
     try {
         ({ stdout } = await execFileAsync('dotnet', args, {
-            cwd: dirname(project),
+            cwd: (0,external_node_path_namespaceObject.dirname)(project),
             encoding: 'utf8',
             timeout: 120_000,
             maxBuffer: 1024 * 1024,
@@ -46485,16 +46485,16 @@ function parseRepository(repository) {
 }
 /**
  * Forms one exact Git tag, with no automatic separator or fallback.
- * @param version - Effective MSBuild Version property
+ * @param version - Evaluated project or package version
  * @param prefix - Literal release tag prefix (may be empty)
  * @returns Exact Git tag name
  */
 function createReleaseTag(version, prefix) {
     if (!/^\d+(?:\.\d+){1,3}(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(version)) {
-        throw new Error('Expected a numeric .NET version, optionally with prerelease/build metadata.');
+        throw new Error('Expected a numeric project version, optionally with prerelease/build metadata.');
     }
     const tag = prefix + version;
-    if (!/^[A-Za-z0-9_][A-Za-z0-9._/+-]*$/.test(tag) ||
+    if (!/^[A-Za-z0-9_@][A-Za-z0-9._/@+-]*$/.test(tag) ||
         tag.includes('..') ||
         tag
             .split('/')
@@ -46517,7 +46517,7 @@ async function findReleaseByTag(token, repository, tag) {
         throw new Error('A GitHub token is required.');
     }
     const { owner, repo } = parseRepository(repository);
-    const octokit = getOctokit(token);
+    const octokit = github_getOctokit(token);
     let release;
     for await (const page of octokit.paginate.iterator(octokit.rest.repos.listReleases, {
         owner,
@@ -46551,8 +46551,79 @@ async function findReleaseByTag(token, repository, tag) {
     }
     return { tagExists, release };
 }
+/**
+ * Formats exact-tag lookup results into the common GitHub Actions output contract.
+ * @param tag - Exact candidate release tag
+ * @param result - Release and Git reference lookup
+ * @returns String-valued action outputs; absent release fields are empty
+ */
+function releaseLookupOutputs(tag, result) {
+    const release = result.release;
+    return {
+        tag,
+        exists: String(Boolean(release)),
+        'tag-exists': String(result.tagExists),
+        'release-id': release ? String(release.id) : '',
+        'release-url': release?.url ?? '',
+        'release-name': release?.name ?? '',
+        draft: release ? String(release.draft) : '',
+        prerelease: release ? String(release.prerelease) : '',
+    };
+}
+
+;// CONCATENATED MODULE: ../packages/lib/src/npm-version.ts
+
+
+/**
+ * Parses a package.json document and validates its version against SemVer 2.0.
+ * @param content - Package manifest JSON text
+ * @returns Package version and optional package name
+ */
+function parseNpmVersion(content) {
+    let parsed;
+    try {
+        parsed = JSON.parse(content.replace(/^\uFEFF/, ''));
+    }
+    catch {
+        throw new Error('Invalid package.json: expected valid JSON.');
+    }
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        throw new Error('Invalid package.json: expected a JSON object.');
+    }
+    const { version, name } = parsed;
+    const semver = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
+    const match = typeof version === 'string' ? semver.exec(version) : null;
+    if (!match || match[0] !== version || match[4]?.split('.').some((id) => /^0\d+$/.test(id))) {
+        throw new Error('package.json must contain a valid SemVer version.');
+    }
+    return {
+        version: match[0],
+        packageName: typeof name === 'string' ? name : '',
+    };
+}
+/**
+ * Reads the selected package's manifest without installing dependencies or executing scripts.
+ * Resolves symlinks before checking that the file is inside the checkout.
+ * @param workspace - Checkout root
+ * @param packageFile - Path to package.json relative to the checkout
+ * @returns Package version metadata
+ */
+async function readNpmVersion(workspace, packageFile) {
+    const root = await (0,promises_namespaceObject.realpath)(workspace);
+    const manifest = await (0,promises_namespaceObject.realpath)((0,external_node_path_namespaceObject.resolve)(root, packageFile));
+    const relativePath = (0,external_node_path_namespaceObject.relative)(root, manifest);
+    if ((0,external_node_path_namespaceObject.isAbsolute)(relativePath) || relativePath === '..' || relativePath.startsWith('..' + external_node_path_namespaceObject.sep)) {
+        throw new Error('Package file must be inside the checked-out workspace.');
+    }
+    if ((0,external_node_path_namespaceObject.basename)(manifest) !== 'package.json' || !(await (0,promises_namespaceObject.stat)(manifest)).isFile()) {
+        throw new Error('Expected a package.json file.');
+    }
+    return parseNpmVersion(await (0,promises_namespaceObject.readFile)(manifest, 'utf8'));
+}
 
 ;// CONCATENATED MODULE: ../packages/lib/src/index.ts
+
+
 
 
 
@@ -46565,9 +46636,9 @@ async function findReleaseByTag(token, repository, tag) {
 
 
 /**
- * Main entry point for the check-release-version action.
+ * Preserves the original explicit-version lookup, including raw and v-prefixed tags.
  */
-async function run() {
+async function runExplicitVersion() {
     const version = getInput('version', { required: true });
     const repository = getInput('repository', { required: true });
     const token = getInput('token') || process.env.GITHUB_TOKEN || '';
@@ -46583,6 +46654,66 @@ async function run() {
     const [owner, repo] = repoParts;
     const exists = await releaseExists(token, owner, repo, version);
     setOutput('exists', exists.toString());
+}
+/**
+ * Resolves project metadata using the selected ecosystem and checks one exact release tag.
+ * @param source - Version source selected by the workflow
+ */
+async function runFileVersion(source) {
+    if (getInput('version')) {
+        throw new Error('Input "version" is only supported with version-source: explicit.');
+    }
+    const workspace = process.env.GITHUB_WORKSPACE || process.cwd();
+    const path = getInput('project-file', { required: source === 'dotnet' });
+    const prefix = getInput('release-tag-prefix');
+    const repository = getInput('repository') || process.env.GITHUB_REPOSITORY || '';
+    const token = getInput('token') || process.env.GITHUB_TOKEN || '';
+    if (!token) {
+        throw new Error('A GitHub token is required.');
+    }
+    core_setSecret(token);
+    const metadata = source === 'dotnet'
+        ? await evaluateDotnetVersion({
+            workspace,
+            projectFile: path,
+            configuration: getInput('configuration') || 'Release',
+            targetFramework: getInput('target-framework') || undefined,
+        })
+        : await readNpmVersion(workspace, path || 'package.json').then((pkg) => ({
+            version: pkg.version,
+            versionPrefix: '',
+            versionSuffix: '',
+            packageVersion: pkg.version,
+            packageName: pkg.packageName,
+        }));
+    const tag = createReleaseTag(metadata.version, prefix);
+    const result = await findReleaseByTag(token, repository, tag);
+    const outputs = {
+        'version-source': source,
+        version: metadata.version,
+        'version-prefix': metadata.versionPrefix,
+        'version-suffix': metadata.versionSuffix,
+        'package-version': metadata.packageVersion,
+        'package-name': 'packageName' in metadata ? metadata.packageName : '',
+        ...releaseLookupOutputs(tag, result),
+    };
+    for (const [name, value] of Object.entries(outputs)) {
+        setOutput(name, value);
+    }
+    info(result.release ? 'A matching GitHub release exists.' : 'No matching GitHub release is visible.');
+}
+/** Dispatches the action according to the version-source input. */
+async function run() {
+    const source = getInput('version-source') || 'explicit';
+    if (source === 'explicit') {
+        await runExplicitVersion();
+    }
+    else if (source === 'dotnet' || source === 'npm') {
+        await runFileVersion(source);
+    }
+    else {
+        throw new Error('Input "version-source" must be explicit, dotnet, or npm.');
+    }
 }
 runAction(run);
 

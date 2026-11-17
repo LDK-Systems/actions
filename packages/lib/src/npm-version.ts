@@ -23,7 +23,8 @@ export function parseNpmVersion(content: string): NpmVersion {
     throw new Error('Invalid package.json: expected a JSON object.');
   }
   const { version, name } = parsed as Record<string, unknown>;
-  const semver = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
+  const semver =
+    /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
   const match = typeof version === 'string' ? semver.exec(version) : null;
   if (!match || match[0] !== version || match[4]?.split('.').some((id) => /^0\d+$/.test(id))) {
     throw new Error('package.json must contain a valid SemVer version.');

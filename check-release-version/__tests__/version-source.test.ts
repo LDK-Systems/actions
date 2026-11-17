@@ -140,7 +140,10 @@ describe('check-release-version file sources', () => {
       draft: '',
       prerelease: '',
     });
-    expect(mocks.readNpmVersion).toHaveBeenCalledWith(expect.any(String), 'packages/ui/package.json');
+    expect(mocks.readNpmVersion).toHaveBeenCalledWith(
+      expect.any(String),
+      'packages/ui/package.json',
+    );
     expect(mocks.evaluateDotnetVersion).not.toHaveBeenCalled();
     expect(mocks.findReleaseByTag).toHaveBeenCalledWith(
       'test-token',

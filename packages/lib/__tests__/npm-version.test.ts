@@ -40,9 +40,12 @@ describe('parseNpmVersion', () => {
     expect(() => parseNpmVersion(JSON.stringify({ version }))).toThrow('valid SemVer');
   });
 
-  it.each(['{', '[]', 'null', '42', '{}'])('rejects malformed or missing manifest data: %s', (data) => {
-    expect(() => parseNpmVersion(data)).toThrow();
-  });
+  it.each(['{', '[]', 'null', '42', '{}'])(
+    'rejects malformed or missing manifest data: %s',
+    (data) => {
+      expect(() => parseNpmVersion(data)).toThrow();
+    },
+  );
 });
 
 describe('readNpmVersion', () => {

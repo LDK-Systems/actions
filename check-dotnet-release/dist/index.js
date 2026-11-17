@@ -9859,7 +9859,7 @@ const buildConnector = __nccwpck_require__(6962)
 const MockClient = __nccwpck_require__(9271)
 const MockAgent = __nccwpck_require__(2107)
 const MockPool = __nccwpck_require__(2646)
-const mockErrors = __nccwpck_require__(3808)
+const mockErrors = __nccwpck_require__(1427)
 const RetryHandler = __nccwpck_require__(2406)
 const { getGlobalDispatcher, setGlobalDispatcher } = __nccwpck_require__(5319)
 const DecoratorHandler = __nccwpck_require__(6037)
@@ -20518,7 +20518,7 @@ module.exports = MockClient
 
 /***/ }),
 
-/***/ 3808:
+/***/ 1427:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
@@ -20873,7 +20873,7 @@ module.exports = {
 "use strict";
 
 
-const { MockNotMatchedError } = __nccwpck_require__(3808)
+const { MockNotMatchedError } = __nccwpck_require__(1427)
 const {
   kDispatches,
   kMockAgent,
@@ -39744,7 +39744,7 @@ var io_util_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _
 };
 
 
-const { chmod, copyFile, lstat, mkdir, open: io_util_open, readdir, rename, rm, rmdir, stat, symlink, unlink } = external_fs_.promises;
+const { chmod, copyFile, lstat, mkdir, open: io_util_open, readdir, rename, rm, rmdir, stat: io_util_stat, symlink, unlink } = external_fs_.promises;
 // export const {open} = 'fs'
 const IS_WINDOWS = process.platform === 'win32';
 /**
@@ -39775,7 +39775,7 @@ const READONLY = external_fs_.constants.O_RDONLY;
 function exists(fsPath) {
     return io_util_awaiter(this, void 0, void 0, function* () {
         try {
-            yield stat(fsPath);
+            yield io_util_stat(fsPath);
         }
         catch (err) {
             if (err.code === 'ENOENT') {
@@ -39788,7 +39788,7 @@ function exists(fsPath) {
 }
 function isDirectory(fsPath_1) {
     return io_util_awaiter(this, arguments, void 0, function* (fsPath, useStat = false) {
-        const stats = useStat ? yield stat(fsPath) : yield lstat(fsPath);
+        const stats = useStat ? yield io_util_stat(fsPath) : yield lstat(fsPath);
         return stats.isDirectory();
     });
 }
@@ -39818,7 +39818,7 @@ function tryGetExecutablePath(filePath, extensions) {
         let stats = undefined;
         try {
             // test file exists
-            stats = yield stat(filePath);
+            stats = yield io_util_stat(filePath);
         }
         catch (err) {
             if (err.code !== 'ENOENT') {
@@ -39846,7 +39846,7 @@ function tryGetExecutablePath(filePath, extensions) {
             filePath = originalFilePath + extension;
             stats = undefined;
             try {
-                stats = yield stat(filePath);
+                stats = yield io_util_stat(filePath);
             }
             catch (err) {
                 if (err.code !== 'ENOENT') {
@@ -43126,8 +43126,8 @@ function withCustomRequest(customRequest) {
 ;// CONCATENATED MODULE: ../node_modules/@octokit/auth-token/dist-bundle/index.js
 // pkg/dist-src/is-jwt.js
 var b64url = "(?:[a-zA-Z0-9_-]+)";
-var sep = "\\.";
-var jwtRE = new RegExp(`^${b64url}${sep}${b64url}${sep}${b64url}$`);
+var dist_bundle_sep = "\\.";
+var jwtRE = new RegExp(`^${b64url}${dist_bundle_sep}${b64url}${dist_bundle_sep}${b64url}$`);
 var isJWT = jwtRE.test.bind(jwtRE);
 
 // pkg/dist-src/auth.js
@@ -46485,16 +46485,16 @@ function parseRepository(repository) {
 }
 /**
  * Forms one exact Git tag, with no automatic separator or fallback.
- * @param version - Effective MSBuild Version property
+ * @param version - Evaluated project or package version
  * @param prefix - Literal release tag prefix (may be empty)
  * @returns Exact Git tag name
  */
 function createReleaseTag(version, prefix) {
     if (!/^\d+(?:\.\d+){1,3}(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(version)) {
-        throw new Error('Expected a numeric .NET version, optionally with prerelease/build metadata.');
+        throw new Error('Expected a numeric project version, optionally with prerelease/build metadata.');
     }
     const tag = prefix + version;
-    if (!/^[A-Za-z0-9_][A-Za-z0-9._/+-]*$/.test(tag) ||
+    if (!/^[A-Za-z0-9_@][A-Za-z0-9._/@+-]*$/.test(tag) ||
         tag.includes('..') ||
         tag
             .split('/')
@@ -46551,8 +46551,79 @@ async function findReleaseByTag(token, repository, tag) {
     }
     return { tagExists, release };
 }
+/**
+ * Formats exact-tag lookup results into the common GitHub Actions output contract.
+ * @param tag - Exact candidate release tag
+ * @param result - Release and Git reference lookup
+ * @returns String-valued action outputs; absent release fields are empty
+ */
+function releaseLookupOutputs(tag, result) {
+    const release = result.release;
+    return {
+        tag,
+        exists: String(Boolean(release)),
+        'tag-exists': String(result.tagExists),
+        'release-id': release ? String(release.id) : '',
+        'release-url': release?.url ?? '',
+        'release-name': release?.name ?? '',
+        draft: release ? String(release.draft) : '',
+        prerelease: release ? String(release.prerelease) : '',
+    };
+}
+
+;// CONCATENATED MODULE: ../packages/lib/src/npm-version.ts
+
+
+/**
+ * Parses a package.json document and validates its version against SemVer 2.0.
+ * @param content - Package manifest JSON text
+ * @returns Package version and optional package name
+ */
+function parseNpmVersion(content) {
+    let parsed;
+    try {
+        parsed = JSON.parse(content.replace(/^\uFEFF/, ''));
+    }
+    catch {
+        throw new Error('Invalid package.json: expected valid JSON.');
+    }
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        throw new Error('Invalid package.json: expected a JSON object.');
+    }
+    const { version, name } = parsed;
+    const semver = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
+    const match = typeof version === 'string' ? semver.exec(version) : null;
+    if (!match || match[0] !== version || match[4]?.split('.').some((id) => /^0\d+$/.test(id))) {
+        throw new Error('package.json must contain a valid SemVer version.');
+    }
+    return {
+        version: match[0],
+        packageName: typeof name === 'string' ? name : '',
+    };
+}
+/**
+ * Reads the selected package's manifest without installing dependencies or executing scripts.
+ * Resolves symlinks before checking that the file is inside the checkout.
+ * @param workspace - Checkout root
+ * @param packageFile - Path to package.json relative to the checkout
+ * @returns Package version metadata
+ */
+async function readNpmVersion(workspace, packageFile) {
+    const root = await realpath(workspace);
+    const manifest = await realpath(resolve(root, packageFile));
+    const relativePath = relative(root, manifest);
+    if (isAbsolute(relativePath) || relativePath === '..' || relativePath.startsWith('..' + sep)) {
+        throw new Error('Package file must be inside the checked-out workspace.');
+    }
+    if (basename(manifest) !== 'package.json' || !(await stat(manifest)).isFile()) {
+        throw new Error('Expected a package.json file.');
+    }
+    return parseNpmVersion(await readFile(manifest, 'utf8'));
+}
 
 ;// CONCATENATED MODULE: ../packages/lib/src/index.ts
+
+
 
 
 
@@ -46586,20 +46657,14 @@ async function run() {
     });
     const tag = createReleaseTag(metadata.version, prefix);
     const result = await findReleaseByTag(token, repository, tag);
-    const release = result.release;
     setOutput('version', metadata.version);
     setOutput('version-prefix', metadata.versionPrefix);
     setOutput('version-suffix', metadata.versionSuffix);
     setOutput('package-version', metadata.packageVersion);
-    setOutput('tag', tag);
-    setOutput('exists', String(Boolean(release)));
-    setOutput('tag-exists', String(result.tagExists));
-    setOutput('release-id', release ? String(release.id) : '');
-    setOutput('release-url', release?.url ?? '');
-    setOutput('release-name', release?.name ?? '');
-    setOutput('draft', release ? String(release.draft) : '');
-    setOutput('prerelease', release ? String(release.prerelease) : '');
-    info(release ? 'A matching GitHub release exists.' : 'No matching GitHub release is visible.');
+    for (const [name, value] of Object.entries(releaseLookupOutputs(tag, result))) {
+        setOutput(name, value);
+    }
+    info(result.release ? 'A matching GitHub release exists.' : 'No matching GitHub release is visible.');
 }
 runAction(run);
 

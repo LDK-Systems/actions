@@ -38,7 +38,9 @@ export function parseRepository(repository: string): { owner: string; repo: stri
  */
 export function createReleaseTag(version: string, prefix: string): string {
   if (!/^\d+(?:\.\d+){1,3}(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(version)) {
-    throw new Error('Expected a numeric project version, optionally with prerelease/build metadata.');
+    throw new Error(
+      'Expected a numeric project version, optionally with prerelease/build metadata.',
+    );
   }
   const tag = prefix + version;
   if (
