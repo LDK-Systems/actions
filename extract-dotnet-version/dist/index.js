@@ -41362,7 +41362,7 @@ function createReleaseTag(version, prefix) {
         throw new Error('Expected a numeric .NET version, optionally with prerelease/build metadata.');
     }
     const tag = prefix + version;
-    if (!/^[A-Za-z0-9_][A-Za-z0-9._/+\-]*$/.test(tag) ||
+    if (!/^[A-Za-z0-9_][A-Za-z0-9._/+-]*$/.test(tag) ||
         tag.includes('..') ||
         tag
             .split('/')
