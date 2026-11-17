@@ -6,3 +6,7 @@ export { createRelease } from './releases';
 export type { CreateReleaseOptions, CreateReleaseResult } from './releases';
 export { renderTemplate } from './template';
 export { runAction } from './run-action';
+export { evaluateDotnetVersion, parseDotnetVersion } from './dotnet-version';
+export type { DotnetVersion, DotnetVersionOptions } from './dotnet-version';
+export { createReleaseTag, findReleaseByTag, parseRepository } from './release-tag';
+export type { ReleaseLookup } from './release-tag';

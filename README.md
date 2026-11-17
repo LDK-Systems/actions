@@ -8,6 +8,7 @@ This repository is an npm workspaces monorepo. Each action is written in TypeScr
 
 | Action | Purpose |
 | --- | --- |
+| [`check-dotnet-release`](check-dotnet-release/action.yml) | Evaluates a .NET project version with MSBuild and checks the exact prefixed GitHub release and tag. |
 | [`check-release-version`](check-release-version/action.yml) | Checks whether a GitHub release already exists for a version. |
 | [`extract-dotnet-version`](extract-dotnet-version/action.yml) | Reads version metadata from a `.csproj` file. |
 | [`generate-release-notes`](generate-release-notes/action.yml) | Renders release notes from a Handlebars template and creates a GitHub release. |
@@ -29,6 +30,30 @@ steps:
       repository: ${{ github.repository }}
       token: ${{ github.token }}
 ```
+
+### `check-dotnet-release`
+
+Evaluates the actual .NET project version (including imported properties) and checks GitHub Releases for a single, exact tag. Supports independent component releases in a monorepo. Requires a checked-out trusted project and the appropriate .NET SDK (MSBuild 17.8 / SDK 8 or later). Does not build or publish the project.
+
+```yaml
+permissions:
+  contents: read
+steps:
+  - uses: actions/checkout@v4
+  - uses: actions/setup-dotnet@v4
+    with:
+      dotnet-version: '10.0.x'
+  - id: release
+    uses: LDK-Systems/actions/check-dotnet-release@main
+    with:
+      project-file: src/Routing/Routing.csproj
+      release-tag-prefix: routing/v
+  - name: Continue if release does not exist
+    if: steps.release.outputs.exists == 'false'
+    run: echo 'Release not found'
+```
+
+See [action documentation](check-dotnet-release/README.md) for the full input/output contract, draft visibility, version evaluation, tag-only cases and concurrent release caveats. Existing version-only and XML extraction actions are unchanged.
 
 ### `check-release-version`
 
