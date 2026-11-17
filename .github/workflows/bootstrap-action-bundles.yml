@@ -14,13 +14,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - name: Format TypeScript using repository configuration
-        run: npm run format
+      - uses: ./.github/actions/setup-js
+      - run: npm run test:ci-tools
       - run: npm run build
       - name: Archive generated bundles and formatter changes
         run: |

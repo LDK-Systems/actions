@@ -1,8 +1,8 @@
-import { existsSync, readFileSync, rmSync } from 'node:fs';
+import { rmSync } from 'node:fs';
+import process from 'node:process';
+import { getActionWorkspaces, selectActions } from './action-workspaces.mjs';
 
-const { workspaces } = JSON.parse(readFileSync('package.json', 'utf8'));
-for (const workspace of workspaces) {
-  if (existsSync(workspace + '/action.yml')) {
-    rmSync(workspace + '/dist', { recursive: true, force: true });
-  }
+const actions = selectActions(getActionWorkspaces(), process.argv.slice(2));
+for (const action of actions) {
+  rmSync(action + '/dist', { recursive: true, force: true });
 }

@@ -43,3 +43,11 @@ This file provides guidance to coding agents working in this repository.
 - Keep `packages/lib` private and bundle its code into each consumer action. Do not publish it to npm. Add new actions to workspaces, the lockfile, test configuration, and lint scopes.
 - Evaluate .NET `Version` via MSBuild where effective project version is needed, rather than parsing only a .csproj. Require a trusted checked-out project and SDK 8+. Never interpolate inputs in shell commands. Use `check-dotnet-release` for prefix-aware exact tag checks; distinguish a Git tag from a GitHub Release. A release lookup is not a lock or an instruction to create/release anything.
 - Use explicit inputs and outputs, read-only API permissions for lookup, and propagate authentication, permission and network errors. Do not report such failures as a missing release.
+
+## Toolchain and change-aware CI
+
+- Use Volta. The root package.json is the single source of truth for exact Node.js and npm versions. Every JavaScript workspace inherits it with `volta.extends`; do not duplicate pins or add a second version file. Use npm ci, not npm install, in CI.
+- Run `npm run test:ci-tools` when modifying CI scripts. JavaScript action workspaces must be private, root-level directories with action.yml/action.yaml and a build script. Register every new action in the root workspaces array; update tsconfig, Vitest and ESLint when applicable.
+- CI runs on PRs into main and pushes to main. The change detector discovers JavaScript action workspaces from metadata and uses dorny/paths-filter to create a JSON build matrix. Changes to packages/**, root dependency/toolchain/config files and build scripts trigger all actions. Action-local changes trigger only the affected actions.
+- Targeted local rebuild: `npm run clean:dist -- check-dotnet-release`, `npm run build --workspace check-dotnet-release`, commit dist, then `npm run check:dist -- check-dotnet-release`. Build every affected consumer for shared changes.
+- CI builds are read-only and reject missing/stale generated files. Do not auto-commit generated code to PRs/main or bypass failing security checks. Use the stable CI result job as the branch protection check if configured.

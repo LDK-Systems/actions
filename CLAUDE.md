@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-# Install dependencies
+# Install Volta first; package.json pins Node and npm.
 npm ci
 
 # Build all actions (bundles each to dist/index.js via ncc)
@@ -23,6 +23,9 @@ npx vitest run --project extract-dotnet-version
 npx vitest run --project generate-release-notes
 npx vitest run --project packages/lib
 
+# Test CI workspace discovery and selection
+npm run test:ci-tools
+
 # Type-check all workspaces
 npm run typecheck
 
@@ -37,9 +40,11 @@ npm run format
 
 ## Architecture
 
-This is an npm workspaces monorepo of GitHub Actions and reusable workflows targeting Node 20.
+This is an npm workspaces monorepo of GitHub Actions and reusable workflows using Volta-pinned Node.js 24 and npm. Existing action runtime declarations remain independent of the developer toolchain.
 
 ### Workspaces
+
+- **`check-dotnet-release`** — evaluates MSBuild project metadata and queries one exact component-prefixed release/tag.
 
 - **`packages/lib`** — shared internal library (private, not published). Exports XML parsing (`fast-xml-parser`), GitHub API helpers (`@actions/github`), and Handlebars template rendering. Consumed by actions via workspace path alias `@ldk-systems/lib`.
 - **`extract-dotnet-version`** — reads a `.csproj` file and outputs `version`, `version-prefix`, `version-suffix` using precedence rules (`Version` > `VersionPrefix-VersionSuffix` > `VersionPrefix`).
@@ -49,7 +54,7 @@ This is an npm workspaces monorepo of GitHub Actions and reusable workflows targ
 
 ### Build pipeline
 
-Each action is bundled with `@vercel/ncc` into a single `dist/index.js` file — this is the file GitHub Actions executes (`runs.main: dist/index.js`). The `dist/` directory is committed. After changing source in any action or `packages/lib`, run `npm run build` and commit the updated `dist/`.
+Each action is bundled with `@vercel/ncc` into a single `dist/index.js` file — this is the file GitHub Actions executes (`runs.main: dist/index.js`). The complete `dist/` directory (including assets and licence notices) is committed. After changing source in any action or `packages/lib`, run `npm run build` and commit the updated `dist/`.
 
 ### Reusable workflows
 
@@ -65,3 +70,5 @@ Tests live in `__tests__/` alongside each workspace. Vitest is used with `fast-c
 - JSDoc is **required** on all exported functions, classes, and interfaces in `src/` files (enforced by ESLint). Tests are exempt.
 - Prettier: 100-char line width, 2-space indent, single quotes, trailing commas, semicolons.
 - `src/` files use TypeScript project references (`tsconfig.json` per workspace extends `tsconfig.base.json`). Test files intentionally sit outside `tsconfig include` and are compiled by Vitest's own transform.
+
+CI uses dorny/paths-filter and a dynamic action matrix for PRs into main and pushes to main. See AGENTS.md for the Volta inheritance, shared-path fan-out, and committed bundle verification requirements.

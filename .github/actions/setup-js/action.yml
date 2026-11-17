@@ -1,0 +1,20 @@
+name: Setup pinned JavaScript toolchain
+description: Install Volta, verify project toolchain pins, cache npm downloads and restore dependencies
+runs:
+  using: composite
+  steps:
+    - uses: volta-cli/action@v4
+    - name: Verify Volta pins
+      shell: bash
+      run: |
+        node --version
+        npm --version
+        test "$(node -p 'process.versions.node')" = "$(node -p 'require("./package.json").volta.node')"
+        test "$(npm --version)" = "$(node -p 'require("./package.json").volta.npm')"
+    - uses: actions/cache@v4
+      with:
+        path: ~/.npm
+        key: npm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package.json', 'package-lock.json') }}
+    - name: Restore locked dependencies
+      shell: bash
+      run: npm ci

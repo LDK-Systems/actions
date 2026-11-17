@@ -1,9 +1,13 @@
 import console from 'node:console';
-import { existsSync, readFileSync } from 'node:fs';
+import process from 'node:process';
+import { existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
+import { getActionWorkspaces, selectActions } from './action-workspaces.mjs';
 
-const { workspaces } = JSON.parse(readFileSync('package.json', 'utf8'));
-const actions = workspaces.filter((workspace) => existsSync(workspace + '/action.yml'));
+const actions = selectActions(getActionWorkspaces(), process.argv.slice(2));
+if (actions.length === 0) {
+  throw new Error('No JavaScript action workspaces found.');
+}
 const paths = actions.map((action) => action + '/dist');
 for (const directory of paths) {
   const entrypoint = directory + '/index.js';
@@ -25,6 +29,6 @@ if (result.status !== 0) {
 }
 if (result.stdout.trim()) {
   console.error(result.stdout);
-  throw new Error('Generated action bundles are stale. Run npm run build and commit dist.');
+  throw new Error('Generated action bundles are stale. Rebuild and commit the complete dist.');
 }
-console.log('All committed ncc bundles are current.');
+console.log('All selected committed ncc bundles are current: ' + actions.join(', '));

@@ -208,6 +208,8 @@ Reusable workflows live in [`.github/workflows`](.github/workflows):
 
 ## Development
 
+Install [Volta](https://volta.sh/) first. The root package.json pins Node.js 24.22.3 and npm 11.19.1. All JavaScript workspaces inherit those pins via volta.extends; the GitHub runner's action runtime is still set independently by runs.using. CI installs the same toolchain using volta-cli/action.
+
 Install dependencies:
 
 ```bash
@@ -242,3 +244,29 @@ npm run lint
 Each action is bundled into `dist/index.js`, which is the entrypoint declared in `action.yml`. After changing source in an action or in `packages/lib`, run `npm run build` and commit the updated `dist/` output.
 
 Tests live in each workspace's `__tests__/` directory and import from `src/` directly. Property-based tests use `fast-check` and follow the `*.property.test.ts` naming pattern.
+
+### Change-aware CI
+
+CI runs for pull requests targeting main and for every push to main, including merged PRs. The changes job discovers registered root-level JavaScript action workspaces, generates filters, and uses dorny/paths-filter to return a JSON array of affected actions. For PRs changes are compared to the PR base; for main pushes they are compared with the pre-push revision (so multi-commit pushes are covered).
+
+| Change | Build matrix |
+| --- | --- |
+| `check-dotnet-release/**` | check-dotnet-release |
+| Two action directories | Both actions, in separate jobs |
+| `packages/**` (shared library) | All actions |
+| Root package/lock/Volta/config or CI build scripts | All actions |
+| Unrelated documentation only | No action build |
+
+Each matrix job uses the pinned toolchain, performs a clean ncc build for its one selected workspace, rejects any changes to committed dist, then uploads the bundle as a short-lived CI artifact. CI never pushes generated files or creates releases. Quality and full Vitest coverage run once when any action is affected; the .NET smoke test runs when check-dotnet-release is affected. The stable CI result job can be configured in branch protection; an empty matrix is a successful no-op.
+
+To rebuild one action locally:
+
+```bash
+npm run clean:dist -- check-dotnet-release
+npm run build --workspace check-dotnet-release
+git add check-dotnet-release/dist
+git commit -m "build: regenerate action distribution"
+npm run check:dist -- check-dotnet-release
+```
+
+Run `npm run test:ci-tools` to validate the workspace discovery and filter-generation helpers. A new JavaScript action is automatically included when its root-level directory has action metadata with a Node runtime and a private package with a build script registered in root workspaces. Update tests/typecheck/lint configuration as appropriate.
