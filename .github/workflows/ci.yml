@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.event_name }}-${{ github.ref }}
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -39,7 +39,8 @@ jobs:
       - name: Report selected actions
         env:
           ACTIONS: ${{ steps.filter.outputs.changes }}
-        run: printf 'Affected actions: %s\n' "$ACTIONS"
+        run: |
+          printf 'Affected actions: %s\n' "$ACTIONS"
 
   quality:
     name: Quality

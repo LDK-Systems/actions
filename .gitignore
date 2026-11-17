@@ -316,14 +316,6 @@ poetry.toml
 pyrightconfig.json
 
 # GitHub JavaScript actions are distributed with their ncc build output.
-!/check-release-version/dist/
-!/check-release-version/dist/**
-!/extract-dotnet-version/dist/
-!/extract-dotnet-version/dist/**
-!/generate-release-notes/dist/
-!/generate-release-notes/dist/**
-!/render-template/dist/
-!/render-template/dist/**
-!/check-dotnet-release/dist/
-!/check-dotnet-release/dist/**
+!/*/dist/
+!/*/dist/**
 *.tsbuildinfo
