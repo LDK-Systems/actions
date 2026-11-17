@@ -3,6 +3,7 @@ import {
   createReleaseTag,
   evaluateDotnetVersion,
   findReleaseByTag,
+  releaseLookupOutputs,
   runAction,
 } from '@ldk-systems/lib';
 
@@ -29,21 +30,15 @@ async function run(): Promise<void> {
   });
   const tag = createReleaseTag(metadata.version, prefix);
   const result = await findReleaseByTag(token, repository, tag);
-  const release = result.release;
   core.setOutput('version', metadata.version);
   core.setOutput('version-prefix', metadata.versionPrefix);
   core.setOutput('version-suffix', metadata.versionSuffix);
   core.setOutput('package-version', metadata.packageVersion);
-  core.setOutput('tag', tag);
-  core.setOutput('exists', String(Boolean(release)));
-  core.setOutput('tag-exists', String(result.tagExists));
-  core.setOutput('release-id', release ? String(release.id) : '');
-  core.setOutput('release-url', release?.url ?? '');
-  core.setOutput('release-name', release?.name ?? '');
-  core.setOutput('draft', release ? String(release.draft) : '');
-  core.setOutput('prerelease', release ? String(release.prerelease) : '');
+  for (const [name, value] of Object.entries(releaseLookupOutputs(tag, result))) {
+    core.setOutput(name, value);
+  }
   core.info(
-    release ? 'A matching GitHub release exists.' : 'No matching GitHub release is visible.',
+    result.release ? 'A matching GitHub release exists.' : 'No matching GitHub release is visible.',
   );
 }
 

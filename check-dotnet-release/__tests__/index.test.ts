@@ -20,7 +20,8 @@ vi.mock('@actions/core', () => ({
   info: mocks.info,
 }));
 
-vi.mock('@ldk-systems/lib', () => ({
+vi.mock('@ldk-systems/lib', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@ldk-systems/lib')>()),
   evaluateDotnetVersion: mocks.evaluateDotnetVersion,
   findReleaseByTag: mocks.findReleaseByTag,
   createReleaseTag: mocks.createReleaseTag,

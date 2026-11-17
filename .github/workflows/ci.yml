@@ -116,7 +116,7 @@ jobs:
   dotnet-smoke:
     name: Evaluate MSBuild and query release
     needs: [changes, build]
-    if: contains(fromJSON(needs.changes.outputs.actions || '[]'), 'check-dotnet-release')
+    if: contains(fromJSON(needs.changes.outputs.actions || '[]'), 'check-dotnet-release') || contains(fromJSON(needs.changes.outputs.actions || '[]'), 'check-release-version')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -126,12 +126,14 @@ jobs:
         with:
           dotnet-version: '10.0.x'
       - id: lookup
+        if: contains(fromJSON(needs.changes.outputs.actions || '[]'), 'check-dotnet-release')
         uses: ./check-dotnet-release
         with:
           project-file: check-dotnet-release/__fixtures__/src/Example.csproj
           configuration: Release
           release-tag-prefix: ci-probe/${{ github.run_id }}/v
       - name: Verify evaluated version and missing release
+        if: contains(fromJSON(needs.changes.outputs.actions || '[]'), 'check-dotnet-release')
         env:
           ACTUAL_VERSION: ${{ steps.lookup.outputs.version }}
           ACTUAL_TAG: ${{ steps.lookup.outputs.tag }}
@@ -143,9 +145,62 @@ jobs:
           test "$RELEASE_EXISTS" = 'false'
           test "$TAG_EXISTS" = 'false'
 
+      - id: generic-dotnet
+        if: contains(fromJSON(needs.changes.outputs.actions || '[]'), 'check-release-version')
+        uses: ./check-release-version
+        with:
+          version-source: dotnet
+          project-file: check-dotnet-release/__fixtures__/src/Example.csproj
+          release-tag-prefix: ci-probe/${{ github.run_id }}/dotnet/v
+      - name: Verify generic .NET mode
+        if: contains(fromJSON(needs.changes.outputs.actions || '[]'), 'check-release-version')
+        env:
+          ACTUAL_SOURCE: ${{ steps.generic-dotnet.outputs.version-source }}
+          ACTUAL_VERSION: ${{ steps.generic-dotnet.outputs.version }}
+          ACTUAL_TAG: ${{ steps.generic-dotnet.outputs.tag }}
+          RELEASE_EXISTS: ${{ steps.generic-dotnet.outputs.exists }}
+          TAG_EXISTS: ${{ steps.generic-dotnet.outputs.tag-exists }}
+        run: |
+          test "$ACTUAL_SOURCE" = dotnet
+          test "$ACTUAL_VERSION" = '2.4.0-preview.1'
+          test "$ACTUAL_TAG" = "ci-probe/$GITHUB_RUN_ID/dotnet/v2.4.0-preview.1"
+          test "$RELEASE_EXISTS" = 'false'
+          test "$TAG_EXISTS" = 'false'
+
+  npm-smoke:
+    name: Evaluate npm package and query release
+    needs: [changes, build]
+    if: contains(fromJSON(needs.changes.outputs.actions || '[]'), 'check-release-version')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - id: lookup
+        uses: ./check-release-version
+        with:
+          version-source: npm
+          project-file: check-release-version/__fixtures__/workspace/package.json
+          release-tag-prefix: ci-probe/${{ github.run_id }}/npm/v
+      - name: Verify npm version and exact release tag
+        env:
+          ACTUAL_SOURCE: ${{ steps.lookup.outputs.version-source }}
+          ACTUAL_VERSION: ${{ steps.lookup.outputs.version }}
+          PACKAGE_NAME: ${{ steps.lookup.outputs.package-name }}
+          ACTUAL_TAG: ${{ steps.lookup.outputs.tag }}
+          RELEASE_EXISTS: ${{ steps.lookup.outputs.exists }}
+          TAG_EXISTS: ${{ steps.lookup.outputs.tag-exists }}
+        run: |
+          test "$ACTUAL_SOURCE" = npm
+          test "$ACTUAL_VERSION" = '3.2.1-beta.2+build.7'
+          test "$PACKAGE_NAME" = '@ldk-systems/fixture'
+          test "$ACTUAL_TAG" = "ci-probe/$GITHUB_RUN_ID/npm/v3.2.1-beta.2+build.7"
+          test "$RELEASE_EXISTS" = 'false'
+          test "$TAG_EXISTS" = 'false'
+
   result:
     name: CI result
-    needs: [changes, quality, test, build, dotnet-smoke]
+    needs: [changes, quality, test, build, dotnet-smoke, npm-smoke]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -157,7 +212,9 @@ jobs:
           TEST: ${{ needs.test.result }}
           BUILD: ${{ needs.build.result }}
           SMOKE: ${{ needs.dotnet-smoke.result }}
-          EXPECT_SMOKE: ${{ contains(fromJSON(needs.changes.outputs.actions || '[]'), 'check-dotnet-release') }}
+          EXPECT_SMOKE: ${{ contains(fromJSON(needs.changes.outputs.actions || '[]'), 'check-dotnet-release') || contains(fromJSON(needs.changes.outputs.actions || '[]'), 'check-release-version') }}
+          NPM_SMOKE: ${{ needs.npm-smoke.result }}
+          EXPECT_NPM_SMOKE: ${{ contains(fromJSON(needs.changes.outputs.actions || '[]'), 'check-release-version') }}
         run: |
           test "$CHANGES" = success
           if test "$ACTIONS" = '[]'; then
@@ -169,4 +226,7 @@ jobs:
           test "$BUILD" = success
           if test "$EXPECT_SMOKE" = true; then
             test "$SMOKE" = success
+          fi
+          if test "$EXPECT_NPM_SMOKE" = true; then
+            test "$NPM_SMOKE" = success
           fi

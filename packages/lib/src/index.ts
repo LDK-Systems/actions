@@ -10,3 +10,6 @@ export { evaluateDotnetVersion, parseDotnetVersion } from './dotnet-version';
 export type { DotnetVersion, DotnetVersionOptions } from './dotnet-version';
 export { createReleaseTag, findReleaseByTag, parseRepository } from './release-tag';
 export type { ReleaseLookup } from './release-tag';
+export { parseNpmVersion, readNpmVersion } from './npm-version';
+export type { NpmVersion } from './npm-version';
+export { releaseLookupOutputs } from './release-tag';

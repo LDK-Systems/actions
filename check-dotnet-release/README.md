@@ -1,5 +1,7 @@
 # Check .NET Release
 
+For new workflows, prefer [check-release-version](../check-release-version/README.md) with `version-source: dotnet`. This action remains supported for compatibility.
+
 Read-only JavaScript action. Uses the .NET SDK to evaluate the specified project, then checks one exact GitHub release tag and the corresponding Git ref in the target repository. No release is created and no tag is pushed.
 
 ## Example

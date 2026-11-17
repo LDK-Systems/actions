@@ -32,17 +32,17 @@ export function parseRepository(repository: string): { owner: string; repo: stri
 
 /**
  * Forms one exact Git tag, with no automatic separator or fallback.
- * @param version - Effective MSBuild Version property
+ * @param version - Evaluated project or package version
  * @param prefix - Literal release tag prefix (may be empty)
  * @returns Exact Git tag name
  */
 export function createReleaseTag(version: string, prefix: string): string {
   if (!/^\d+(?:\.\d+){1,3}(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(version)) {
-    throw new Error('Expected a numeric .NET version, optionally with prerelease/build metadata.');
+    throw new Error('Expected a numeric project version, optionally with prerelease/build metadata.');
   }
   const tag = prefix + version;
   if (
-    !/^[A-Za-z0-9_][A-Za-z0-9._/+-]*$/.test(tag) ||
+    !/^[A-Za-z0-9_@][A-Za-z0-9._/@+-]*$/.test(tag) ||
     tag.includes('..') ||
     tag
       .split('/')
@@ -106,4 +106,24 @@ export async function findReleaseByTag(
     }
   }
   return { tagExists, release };
+}
+
+/**
+ * Formats exact-tag lookup results into the common GitHub Actions output contract.
+ * @param tag - Exact candidate release tag
+ * @param result - Release and Git reference lookup
+ * @returns String-valued action outputs; absent release fields are empty
+ */
+export function releaseLookupOutputs(tag: string, result: ReleaseLookup): Record<string, string> {
+  const release = result.release;
+  return {
+    tag,
+    exists: String(Boolean(release)),
+    'tag-exists': String(result.tagExists),
+    'release-id': release ? String(release.id) : '',
+    'release-url': release?.url ?? '',
+    'release-name': release?.name ?? '',
+    draft: release ? String(release.draft) : '',
+    prerelease: release ? String(release.prerelease) : '',
+  };
 }

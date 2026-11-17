@@ -17,6 +17,7 @@ describe('createReleaseTag', () => {
     ['1.2.3', '', '1.2.3'],
     ['1.2.3-preview.1+build.7', 'routing/v', 'routing/v1.2.3-preview.1+build.7'],
     ['1.2.3.4', 'worker-', 'worker-1.2.3.4'],
+    ['1.2.3', '@ldk-systems/ui@', '@ldk-systems/ui@1.2.3'],
   ])('uses the literal prefix without fallback', (version, prefix, tag) => {
     expect(createReleaseTag(version, prefix)).toBe(tag);
   });
@@ -28,6 +29,7 @@ describe('createReleaseTag', () => {
     ['1.2.3', 'bad prefix'],
     ['1.2.3', 'component.lock/'],
     ['1.2.3', '-'],
+    ['1.2.3', 'bad@{'],
   ])('rejects invalid version or tag prefix', (version, prefix) => {
     expect(() => createReleaseTag(version, prefix)).toThrow();
   });

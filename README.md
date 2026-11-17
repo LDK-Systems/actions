@@ -9,7 +9,7 @@ This repository is an npm workspaces monorepo. Each action is written in TypeScr
 | Action | Purpose |
 | --- | --- |
 | [`check-dotnet-release`](check-dotnet-release/action.yml) | Evaluates a .NET project version with MSBuild and checks the exact prefixed GitHub release and tag. |
-| [`check-release-version`](check-release-version/action.yml) | Checks whether a GitHub release already exists for a version. |
+| [`check-release-version`](check-release-version/action.yml) | Checks GitHub releases for explicit, .NET or npm versions; supports component tag prefixes. |
 | [`extract-dotnet-version`](extract-dotnet-version/action.yml) | Reads version metadata from a `.csproj` file. |
 | [`generate-release-notes`](generate-release-notes/action.yml) | Renders release notes from a Handlebars template and creates a GitHub release. |
 | [`render-template`](render-template/action.yml) | Renders a Handlebars template and returns the rendered string. |
@@ -53,35 +53,23 @@ steps:
     run: echo 'Release not found'
 ```
 
-See [action documentation](check-dotnet-release/README.md) for the full input/output contract, draft visibility, version evaluation, tag-only cases and concurrent release caveats. Existing version-only and XML extraction actions are unchanged.
+See [action documentation](check-dotnet-release/README.md) for the full input/output contract, draft visibility, version evaluation, tag-only cases and concurrent release caveats. The .NET-only action remains available for compatibility; prefer the multi-source check-release-version action for new workflows.
 
 ### `check-release-version`
 
-Checks GitHub Releases for an existing version and outputs `exists` as `true` or `false`.
+Select a version source with `version-source: dotnet` or `version-source: npm`. The original explicit-version mode remains the default.
 
 ```yaml
-- name: Check release version
-  id: check-version
+- name: Check npm package release
+  id: release
   uses: LDK-Systems/actions/check-release-version@main
   with:
-    version: 1.2.3
-    repository: ${{ github.repository }}
-    token: ${{ github.token }}
+    version-source: npm
+    project-file: packages/ui/package.json
+    release-tag-prefix: 'ui/v'
 ```
 
-Inputs:
-
-| Name | Required | Description |
-| --- | --- | --- |
-| `version` | Yes | Version string to check. Raw and `v`-prefixed tags are matched. |
-| `repository` | Yes | Repository in `owner/repo` format. |
-| `token` | No | GitHub token for API authentication. Defaults to `GITHUB_TOKEN` when available. |
-
-Outputs:
-
-| Name | Description |
-| --- | --- |
-| `exists` | Whether the release version already exists. |
+For .NET, set `version-source: dotnet` and point `project-file` to the project (install the appropriate SDK first). Both file-based modes return exact tag, release metadata, version and separate release/tag presence flags. npm mode defaults to root package.json and does not execute npm or query the registry. See [full inputs, outputs and examples](check-release-version/README.md).
 
 ### `extract-dotnet-version`
 
@@ -257,7 +245,7 @@ CI runs for pull requests targeting main and for every push to main, including m
 | Root package/lock/Volta/config or CI build scripts | All actions |
 | Unrelated documentation only | No action build |
 
-Each matrix job uses the pinned toolchain, performs a clean ncc build for its one selected workspace, rejects any changes to committed dist, then uploads the bundle as a short-lived CI artifact. CI never pushes generated files or creates releases. Quality and full Vitest coverage run once when any action is affected; the .NET smoke test runs when check-dotnet-release is affected. The stable CI result job can be configured in branch protection; an empty matrix is a successful no-op.
+Each matrix job uses the pinned toolchain, performs a clean ncc build for its one selected workspace, rejects any changes to committed dist, then uploads the bundle as a short-lived CI artifact. CI never pushes generated files or creates releases. Quality and full Vitest coverage run once when any action is affected; live .NET and npm smoke tests run when the relevant release checker is affected. The stable CI result job can be configured in branch protection; an empty matrix is a successful no-op.
 
 To rebuild one action locally:
 
