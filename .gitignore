@@ -314,3 +314,8 @@ poetry.toml
 
 # LSP config files
 pyrightconfig.json
+
+# GitHub JavaScript actions are distributed with their ncc build output.
+!/*/dist/
+!/*/dist/**
+*.tsbuildinfo

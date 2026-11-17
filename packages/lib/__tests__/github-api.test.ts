@@ -9,7 +9,9 @@ import { getReleases, releaseExists } from '../src/github-api';
 
 const mockGetOctokit = vi.mocked(getOctokit);
 
-function createMockOctokit(releases: Array<{ id: number; tag_name: string; name: string | null; html_url: string }>) {
+function createMockOctokit(
+  releases: Array<{ id: number; tag_name: string; name: string | null; html_url: string }>,
+) {
   const listReleases = vi.fn().mockResolvedValue({
     data: releases,
   });
@@ -30,15 +32,35 @@ describe('getReleases', () => {
 
   it('fetches releases and maps them to ReleaseInfo', async () => {
     createMockOctokit([
-      { id: 1, tag_name: 'v1.0.0', name: 'Release 1.0.0', html_url: 'https://github.com/owner/repo/releases/tag/v1.0.0' },
-      { id: 2, tag_name: '2.0.0', name: null, html_url: 'https://github.com/owner/repo/releases/tag/2.0.0' },
+      {
+        id: 1,
+        tag_name: 'v1.0.0',
+        name: 'Release 1.0.0',
+        html_url: 'https://github.com/owner/repo/releases/tag/v1.0.0',
+      },
+      {
+        id: 2,
+        tag_name: '2.0.0',
+        name: null,
+        html_url: 'https://github.com/owner/repo/releases/tag/2.0.0',
+      },
     ]);
 
     const result = await getReleases('token', 'owner', 'repo');
 
     expect(result).toEqual([
-      { id: 1, tagName: 'v1.0.0', name: 'Release 1.0.0', url: 'https://github.com/owner/repo/releases/tag/v1.0.0' },
-      { id: 2, tagName: '2.0.0', name: '', url: 'https://github.com/owner/repo/releases/tag/2.0.0' },
+      {
+        id: 1,
+        tagName: 'v1.0.0',
+        name: 'Release 1.0.0',
+        url: 'https://github.com/owner/repo/releases/tag/v1.0.0',
+      },
+      {
+        id: 2,
+        tagName: '2.0.0',
+        name: '',
+        url: 'https://github.com/owner/repo/releases/tag/2.0.0',
+      },
     ]);
   });
 
@@ -58,10 +80,16 @@ describe('getReleases', () => {
       html_url: `https://github.com/owner/repo/releases/tag/v${i + 1}.0.0`,
     }));
     const page2 = [
-      { id: 101, tag_name: 'v101.0.0', name: 'Release 101', html_url: 'https://github.com/owner/repo/releases/tag/v101.0.0' },
+      {
+        id: 101,
+        tag_name: 'v101.0.0',
+        name: 'Release 101',
+        html_url: 'https://github.com/owner/repo/releases/tag/v101.0.0',
+      },
     ];
 
-    const listReleases = vi.fn()
+    const listReleases = vi
+      .fn()
       .mockResolvedValueOnce({ data: page1 })
       .mockResolvedValueOnce({ data: page2 });
 
@@ -75,8 +103,18 @@ describe('getReleases', () => {
 
     expect(result).toHaveLength(101);
     expect(listReleases).toHaveBeenCalledTimes(2);
-    expect(listReleases).toHaveBeenCalledWith({ owner: 'owner', repo: 'repo', per_page: 100, page: 1 });
-    expect(listReleases).toHaveBeenCalledWith({ owner: 'owner', repo: 'repo', per_page: 100, page: 2 });
+    expect(listReleases).toHaveBeenCalledWith({
+      owner: 'owner',
+      repo: 'repo',
+      per_page: 100,
+      page: 1,
+    });
+    expect(listReleases).toHaveBeenCalledWith({
+      owner: 'owner',
+      repo: 'repo',
+      per_page: 100,
+      page: 2,
+    });
   });
 
   it('propagates authentication errors (Req 5.8)', async () => {
@@ -119,7 +157,12 @@ describe('releaseExists', () => {
 
   it('returns true when exact version tag matches', async () => {
     createMockOctokit([
-      { id: 1, tag_name: '1.0.0', name: 'Release 1.0.0', html_url: 'https://github.com/owner/repo/releases/tag/1.0.0' },
+      {
+        id: 1,
+        tag_name: '1.0.0',
+        name: 'Release 1.0.0',
+        html_url: 'https://github.com/owner/repo/releases/tag/1.0.0',
+      },
     ]);
 
     const result = await releaseExists('token', 'owner', 'repo', '1.0.0');
@@ -129,7 +172,12 @@ describe('releaseExists', () => {
 
   it('returns true when v-prefixed version tag matches', async () => {
     createMockOctokit([
-      { id: 1, tag_name: 'v1.0.0', name: 'Release 1.0.0', html_url: 'https://github.com/owner/repo/releases/tag/v1.0.0' },
+      {
+        id: 1,
+        tag_name: 'v1.0.0',
+        name: 'Release 1.0.0',
+        html_url: 'https://github.com/owner/repo/releases/tag/v1.0.0',
+      },
     ]);
 
     const result = await releaseExists('token', 'owner', 'repo', '1.0.0');
@@ -139,7 +187,12 @@ describe('releaseExists', () => {
 
   it('returns true when version input has v-prefix and tag has v-prefix', async () => {
     createMockOctokit([
-      { id: 1, tag_name: 'v2.0.0', name: 'Release', html_url: 'https://github.com/owner/repo/releases/tag/v2.0.0' },
+      {
+        id: 1,
+        tag_name: 'v2.0.0',
+        name: 'Release',
+        html_url: 'https://github.com/owner/repo/releases/tag/v2.0.0',
+      },
     ]);
 
     const result = await releaseExists('token', 'owner', 'repo', 'v2.0.0');
@@ -149,7 +202,12 @@ describe('releaseExists', () => {
 
   it('returns true when version input has v-prefix and tag does not', async () => {
     createMockOctokit([
-      { id: 1, tag_name: '2.0.0', name: 'Release', html_url: 'https://github.com/owner/repo/releases/tag/2.0.0' },
+      {
+        id: 1,
+        tag_name: '2.0.0',
+        name: 'Release',
+        html_url: 'https://github.com/owner/repo/releases/tag/2.0.0',
+      },
     ]);
 
     const result = await releaseExists('token', 'owner', 'repo', 'v2.0.0');
@@ -159,7 +217,12 @@ describe('releaseExists', () => {
 
   it('returns false when no matching release exists', async () => {
     createMockOctokit([
-      { id: 1, tag_name: 'v1.0.0', name: 'Release 1.0.0', html_url: 'https://github.com/owner/repo/releases/tag/v1.0.0' },
+      {
+        id: 1,
+        tag_name: 'v1.0.0',
+        name: 'Release 1.0.0',
+        html_url: 'https://github.com/owner/repo/releases/tag/v1.0.0',
+      },
     ]);
 
     const result = await releaseExists('token', 'owner', 'repo', '2.0.0');

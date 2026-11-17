@@ -8,7 +8,8 @@ This repository is an npm workspaces monorepo. Each action is written in TypeScr
 
 | Action | Purpose |
 | --- | --- |
-| [`check-release-version`](check-release-version/action.yml) | Checks whether a GitHub release already exists for a version. |
+| [`check-dotnet-release`](check-dotnet-release/action.yml) | Evaluates a .NET project version with MSBuild and checks the exact prefixed GitHub release and tag. |
+| [`check-release-version`](check-release-version/action.yml) | Checks GitHub releases for explicit, .NET or npm versions; supports component tag prefixes. |
 | [`extract-dotnet-version`](extract-dotnet-version/action.yml) | Reads version metadata from a `.csproj` file. |
 | [`generate-release-notes`](generate-release-notes/action.yml) | Renders release notes from a Handlebars template and creates a GitHub release. |
 | [`render-template`](render-template/action.yml) | Renders a Handlebars template and returns the rendered string. |
@@ -30,33 +31,45 @@ steps:
       token: ${{ github.token }}
 ```
 
-### `check-release-version`
+### `check-dotnet-release`
 
-Checks GitHub Releases for an existing version and outputs `exists` as `true` or `false`.
+Evaluates the actual .NET project version (including imported properties) and checks GitHub Releases for a single, exact tag. Supports independent component releases in a monorepo. Requires a checked-out trusted project and the appropriate .NET SDK (MSBuild 17.8 / SDK 8 or later). Does not build or publish the project.
 
 ```yaml
-- name: Check release version
-  id: check-version
-  uses: LDK-Systems/actions/check-release-version@main
-  with:
-    version: 1.2.3
-    repository: ${{ github.repository }}
-    token: ${{ github.token }}
+permissions:
+  contents: read
+steps:
+  - uses: actions/checkout@v4
+  - uses: actions/setup-dotnet@v4
+    with:
+      dotnet-version: '10.0.x'
+  - id: release
+    uses: LDK-Systems/actions/check-dotnet-release@main
+    with:
+      project-file: src/Routing/Routing.csproj
+      release-tag-prefix: routing/v
+  - name: Continue if release does not exist
+    if: steps.release.outputs.exists == 'false'
+    run: echo 'Release not found'
 ```
 
-Inputs:
+See [action documentation](check-dotnet-release/README.md) for the full input/output contract, draft visibility, version evaluation, tag-only cases and concurrent release caveats. The .NET-only action remains available for compatibility; prefer the multi-source check-release-version action for new workflows.
 
-| Name | Required | Description |
-| --- | --- | --- |
-| `version` | Yes | Version string to check. Raw and `v`-prefixed tags are matched. |
-| `repository` | Yes | Repository in `owner/repo` format. |
-| `token` | No | GitHub token for API authentication. Defaults to `GITHUB_TOKEN` when available. |
+### `check-release-version`
 
-Outputs:
+Select a version source with `version-source: dotnet` or `version-source: npm`. The original explicit-version mode remains the default.
 
-| Name | Description |
-| --- | --- |
-| `exists` | Whether the release version already exists. |
+```yaml
+- name: Check npm package release
+  id: release
+  uses: LDK-Systems/actions/check-release-version@main
+  with:
+    version-source: npm
+    project-file: packages/ui/package.json
+    release-tag-prefix: 'ui/v'
+```
+
+For .NET, set `version-source: dotnet` and point `project-file` to the project (install the appropriate SDK first). Both file-based modes return exact tag, release metadata, version and separate release/tag presence flags. npm mode defaults to root package.json and does not execute npm or query the registry. See [full inputs, outputs and examples](check-release-version/README.md).
 
 ### `extract-dotnet-version`
 
@@ -183,6 +196,8 @@ Reusable workflows live in [`.github/workflows`](.github/workflows):
 
 ## Development
 
+Install [Volta](https://volta.sh/) first. The root package.json pins Node.js 24.22.3 and npm 11.19.1. All JavaScript workspaces inherit those pins via volta.extends; the GitHub runner's action runtime is set to `node24` in each JavaScript action's `runs.using`. CI installs the same toolchain using volta-cli/action.
+
 Install dependencies:
 
 ```bash
@@ -217,3 +232,33 @@ npm run lint
 Each action is bundled into `dist/index.js`, which is the entrypoint declared in `action.yml`. After changing source in an action or in `packages/lib`, run `npm run build` and commit the updated `dist/` output.
 
 Tests live in each workspace's `__tests__/` directory and import from `src/` directly. Property-based tests use `fast-check` and follow the `*.property.test.ts` naming pattern.
+
+### Change-aware CI
+
+CI runs for pull requests targeting main and for every push to main, including merged PRs. The changes job discovers registered root-level JavaScript action workspaces, generates filters, and uses dorny/paths-filter to return a JSON array of affected actions. For PRs changes are compared to the PR base; for main pushes they are compared with the pre-push revision (so multi-commit pushes are covered).
+
+| Change | Build matrix |
+| --- | --- |
+| `check-dotnet-release/**` | check-dotnet-release |
+| Two action directories | Both actions, in separate jobs |
+| `packages/**` (shared library) | All actions |
+| Root package/lock/Volta/config or CI build scripts | All actions |
+| Unrelated documentation only | No action build |
+
+Each matrix job uses the pinned toolchain, performs a clean ncc build for its one selected workspace, rejects any changes to committed dist, then uploads the bundle as a short-lived CI artifact. CI never pushes generated files or creates releases. Quality and full Vitest coverage run once when any action is affected; live .NET and npm smoke tests run when the relevant release checker is affected. The stable CI result job can be configured in branch protection; an empty matrix is a successful no-op.
+
+To rebuild one action locally:
+
+```bash
+npm run clean:dist -- check-dotnet-release
+npm run build --workspace check-dotnet-release
+git add check-dotnet-release/dist
+git commit -m "build: regenerate action distribution"
+npm run check:dist -- check-dotnet-release
+```
+
+Run `npm run test:ci-tools` to validate the workspace discovery and filter-generation helpers. A new JavaScript action is automatically included when its root-level directory has action metadata with a Node runtime and a private package with a build script registered in root workspaces. Update tests/typecheck/lint configuration as appropriate.
+
+### Dependency security
+
+Keep `npm audit --audit-level=moderate` passing. Upgrade direct dependencies intentionally, review `package-lock.json`, and rebuild all committed distributions after dependency changes. Vitest 5 uses `test.projects` in the root `vitest.config.ts` and a matching V8 coverage provider. TypeScript retains ES imports for ncc to bundle ESM dependencies into the standalone action entrypoints.

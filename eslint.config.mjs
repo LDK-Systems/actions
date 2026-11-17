@@ -19,6 +19,7 @@ export default tseslint.config(
     files: [
       'extract-dotnet-version/src/**/*.ts',
       'check-release-version/src/**/*.ts',
+      'check-dotnet-release/src/**/*.ts',
       'generate-release-notes/src/**/*.ts',
       'render-template/src/**/*.ts',
       'packages/lib/src/**/*.ts',
@@ -52,6 +53,7 @@ export default tseslint.config(
     files: [
       'extract-dotnet-version/src/**/*.ts',
       'check-release-version/src/**/*.ts',
+      'check-dotnet-release/src/**/*.ts',
       'generate-release-notes/src/**/*.ts',
       'render-template/src/**/*.ts',
       'packages/lib/src/**/*.ts',

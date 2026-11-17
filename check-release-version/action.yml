@@ -1,18 +1,64 @@
 name: 'Check Release Version'
-description: 'Checks whether a version already exists as a GitHub release'
+description: 'Checks a GitHub release using an explicit version, .NET project or npm package'
 inputs:
-  version:
-    description: 'The version string to check'
-    required: true
-  repository:
-    description: 'The repository in owner/repo format'
-    required: true
-  token:
-    description: 'GitHub token for API authentication'
+  version-source:
+    description: 'Version source: explicit, dotnet, or npm'
     required: false
+    default: 'explicit'
+  version:
+    description: 'Version to look up (required when version-source is explicit)'
+    required: false
+  project-file:
+    description: 'Path to a .NET project or package.json; npm defaults to package.json'
+    required: false
+  configuration:
+    description: 'MSBuild Configuration property (dotnet only)'
+    required: false
+    default: 'Release'
+  target-framework:
+    description: 'Optional MSBuild TargetFramework property (dotnet only)'
+    required: false
+  release-tag-prefix:
+    description: 'Literal tag prefix in dotnet/npm mode; empty for unprefixed tags'
+    required: false
+    default: 'v'
+  repository:
+    description: 'Target repository in owner/repo format'
+    required: false
+    default: ${{ github.repository }}
+  token:
+    description: 'GitHub token with contents read permission'
+    required: false
+    default: ${{ github.token }}
 outputs:
   exists:
-    description: 'Whether the release version already exists (true/false)'
+    description: 'Whether a matching release is visible to the token'
+  version-source:
+    description: 'Selected file version source (dotnet or npm); empty in explicit mode'
+  version:
+    description: 'Resolved version (dotnet/npm)'
+  version-prefix:
+    description: 'Evaluated MSBuild VersionPrefix, empty otherwise'
+  version-suffix:
+    description: 'Evaluated MSBuild VersionSuffix, empty otherwise'
+  package-version:
+    description: 'MSBuild PackageVersion or npm package version'
+  package-name:
+    description: 'npm package name if present, empty otherwise'
+  tag:
+    description: 'Exact candidate Git tag (dotnet/npm)'
+  tag-exists:
+    description: 'Whether the exact Git tag already exists (dotnet/npm)'
+  release-id:
+    description: 'Existing release ID, or empty'
+  release-url:
+    description: 'Existing release URL, or empty'
+  release-name:
+    description: 'Existing release display name, or empty'
+  draft:
+    description: 'Whether the existing release is a draft, or empty'
+  prerelease:
+    description: 'Whether the existing release is a prerelease, or empty'
 runs:
-  using: 'node20'
+  using: 'node24'
   main: 'dist/index.js'

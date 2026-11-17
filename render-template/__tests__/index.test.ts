@@ -155,9 +155,7 @@ describe('render-template', () => {
 
       await import('../src/index');
 
-      expect(mockedCore.setFailed).toHaveBeenCalledWith(
-        'Input "template-vars" is not valid JSON',
-      );
+      expect(mockedCore.setFailed).toHaveBeenCalledWith('Input "template-vars" is not valid JSON');
       expect(mockedCore.setOutput).not.toHaveBeenCalled();
     });
 

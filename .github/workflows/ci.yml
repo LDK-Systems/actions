@@ -3,113 +3,230 @@ name: CI
 on:
   pull_request:
     branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  changes:
+    name: Resolve changed JavaScript actions
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      actions: ${{ steps.filter.outputs.changes }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: volta-cli/action@v4
+      - name: Generate workspace filters
+        run: node scripts/resolve-action-filters.mjs > .github/action-filters.generated.json
+      - name: Resolve affected actions
+        id: filter
+        uses: dorny/paths-filter@v4
+        with:
+          filters: .github/action-filters.generated.json
+          base: ${{ github.event_name == 'push' && github.ref || github.base_ref }}
+      - name: Report selected actions
+        env:
+          ACTIONS: ${{ steps.filter.outputs.changes }}
+        run: |
+          printf 'Affected actions: %s\n' "$ACTIONS"
+
   quality:
     name: Quality
+    needs: changes
+    if: needs.changes.outputs.actions != '[]'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
         with:
-          node-version: 20
-
-      - name: Restore npm cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            npm-${{ runner.os }}-
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Format check
-        run: npm run format:check
-
-      - name: Security audit
-        run: npm audit --audit-level=moderate
+          persist-credentials: false
+      - uses: ./.github/actions/setup-js
+      - run: npm run lint
+      - run: npm run format:check
+        if: success() || failure()
+      - run: npm run typecheck
+        if: success() || failure()
+      - run: npm run test:ci-tools
+        if: success() || failure()
+      - run: npm audit --audit-level=moderate
+        if: success() || failure()
 
   test:
     name: Test
-    needs: [quality]
+    needs: changes
+    if: needs.changes.outputs.actions != '[]'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
         with:
-          node-version: 20
-
-      - name: Restore npm cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            npm-${{ runner.os }}-
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run tests with coverage
-        run: npx vitest run --coverage --coverage.reporter=json-summary --coverage.reporter=html
-
-      - name: Upload coverage report
+          persist-credentials: false
+      - uses: ./.github/actions/setup-js
+      - run: npx vitest run --coverage --coverage.reporter=json-summary --coverage.reporter=html
+      - uses: actions/upload-artifact@v4
         if: always()
-        uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: coverage/
           retention-days: 30
 
   build:
-    name: Build
-    needs: [quality]
+    name: Build ${{ matrix.action }}
+    needs: changes
+    if: needs.changes.outputs.actions != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        action: ${{ fromJSON(needs.changes.outputs.actions) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-js
+      - name: Clean selected action
+        env:
+          ACTION: ${{ matrix.action }}
+        run: npm run clean:dist -- "$ACTION"
+      - name: Build selected action with ncc
+        env:
+          ACTION: ${{ matrix.action }}
+        run: npm run build --workspace "$ACTION"
+      - name: Verify committed distribution
+        env:
+          ACTION: ${{ matrix.action }}
+        run: npm run check:dist -- "$ACTION"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bundle-${{ matrix.action }}
+          path: ${{ matrix.action }}/dist/
+          if-no-files-found: error
+          retention-days: 7
+
+  dotnet-smoke:
+    name: Evaluate MSBuild and query release
+    needs: [changes, build]
+    if: contains(fromJSON(needs.changes.outputs.actions || '[]'), 'check-dotnet-release') || contains(fromJSON(needs.changes.outputs.actions || '[]'), 'check-release-version')
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Detect changes
-        uses: dorny/paths-filter@v3
-        id: changes
+      - uses: actions/checkout@v4
         with:
-          filters: |
-            actions:
-              - 'extract-dotnet-version/**'
-              - 'check-release-version/**'
-              - 'generate-release-notes/**'
-              - 'packages/**'
-
-      - name: Setup Node.js
-        if: steps.changes.outputs.actions == 'true'
-        uses: actions/setup-node@v4
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v4
         with:
-          node-version: 20
-
-      - name: Restore npm cache
-        if: steps.changes.outputs.actions == 'true'
-        uses: actions/cache@v4
+          dotnet-version: '10.0.x'
+      - id: lookup
+        if: contains(fromJSON(needs.changes.outputs.actions || '[]'), 'check-dotnet-release')
+        uses: ./check-dotnet-release
         with:
-          path: ~/.npm
-          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            npm-${{ runner.os }}-
+          project-file: check-dotnet-release/__fixtures__/src/Example.csproj
+          configuration: Release
+          release-tag-prefix: ci-probe/${{ github.run_id }}/v
+      - name: Verify evaluated version and missing release
+        if: contains(fromJSON(needs.changes.outputs.actions || '[]'), 'check-dotnet-release')
+        env:
+          ACTUAL_VERSION: ${{ steps.lookup.outputs.version }}
+          ACTUAL_TAG: ${{ steps.lookup.outputs.tag }}
+          RELEASE_EXISTS: ${{ steps.lookup.outputs.exists }}
+          TAG_EXISTS: ${{ steps.lookup.outputs.tag-exists }}
+        run: |
+          test "$ACTUAL_VERSION" = '2.4.0-preview.1'
+          test "$ACTUAL_TAG" = "ci-probe/$GITHUB_RUN_ID/v2.4.0-preview.1"
+          test "$RELEASE_EXISTS" = 'false'
+          test "$TAG_EXISTS" = 'false'
 
-      - name: Install dependencies
-        if: steps.changes.outputs.actions == 'true'
-        run: npm ci
+      - id: generic-dotnet
+        if: contains(fromJSON(needs.changes.outputs.actions || '[]'), 'check-release-version')
+        uses: ./check-release-version
+        with:
+          version-source: dotnet
+          project-file: check-dotnet-release/__fixtures__/src/Example.csproj
+          release-tag-prefix: ci-probe/${{ github.run_id }}/dotnet/v
+      - name: Verify generic .NET mode
+        if: contains(fromJSON(needs.changes.outputs.actions || '[]'), 'check-release-version')
+        env:
+          ACTUAL_SOURCE: ${{ steps.generic-dotnet.outputs.version-source }}
+          ACTUAL_VERSION: ${{ steps.generic-dotnet.outputs.version }}
+          ACTUAL_TAG: ${{ steps.generic-dotnet.outputs.tag }}
+          RELEASE_EXISTS: ${{ steps.generic-dotnet.outputs.exists }}
+          TAG_EXISTS: ${{ steps.generic-dotnet.outputs.tag-exists }}
+        run: |
+          test "$ACTUAL_SOURCE" = dotnet
+          test "$ACTUAL_VERSION" = '2.4.0-preview.1'
+          test "$ACTUAL_TAG" = "ci-probe/$GITHUB_RUN_ID/dotnet/v2.4.0-preview.1"
+          test "$RELEASE_EXISTS" = 'false'
+          test "$TAG_EXISTS" = 'false'
 
-      - name: Build all actions
-        if: steps.changes.outputs.actions == 'true'
-        run: npm run build
+  npm-smoke:
+    name: Evaluate npm package and query release
+    needs: [changes, build]
+    if: contains(fromJSON(needs.changes.outputs.actions || '[]'), 'check-release-version')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - id: lookup
+        uses: ./check-release-version
+        with:
+          version-source: npm
+          project-file: check-release-version/__fixtures__/workspace/package.json
+          release-tag-prefix: ci-probe/${{ github.run_id }}/npm/v
+      - name: Verify npm version and exact release tag
+        env:
+          ACTUAL_SOURCE: ${{ steps.lookup.outputs.version-source }}
+          ACTUAL_VERSION: ${{ steps.lookup.outputs.version }}
+          PACKAGE_NAME: ${{ steps.lookup.outputs.package-name }}
+          ACTUAL_TAG: ${{ steps.lookup.outputs.tag }}
+          RELEASE_EXISTS: ${{ steps.lookup.outputs.exists }}
+          TAG_EXISTS: ${{ steps.lookup.outputs.tag-exists }}
+        run: |
+          test "$ACTUAL_SOURCE" = npm
+          test "$ACTUAL_VERSION" = '3.2.1-beta.2+build.7'
+          test "$PACKAGE_NAME" = '@ldk-systems/fixture'
+          test "$ACTUAL_TAG" = "ci-probe/$GITHUB_RUN_ID/npm/v3.2.1-beta.2+build.7"
+          test "$RELEASE_EXISTS" = 'false'
+          test "$TAG_EXISTS" = 'false'
+
+  result:
+    name: CI result
+    needs: [changes, quality, test, build, dotnet-smoke, npm-smoke]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require selected checks to succeed
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          ACTIONS: ${{ needs.changes.outputs.actions }}
+          QUALITY: ${{ needs.quality.result }}
+          TEST: ${{ needs.test.result }}
+          BUILD: ${{ needs.build.result }}
+          SMOKE: ${{ needs.dotnet-smoke.result }}
+          EXPECT_SMOKE: ${{ contains(fromJSON(needs.changes.outputs.actions || '[]'), 'check-dotnet-release') || contains(fromJSON(needs.changes.outputs.actions || '[]'), 'check-release-version') }}
+          NPM_SMOKE: ${{ needs.npm-smoke.result }}
+          EXPECT_NPM_SMOKE: ${{ contains(fromJSON(needs.changes.outputs.actions || '[]'), 'check-release-version') }}
+        run: |
+          test "$CHANGES" = success
+          if test "$ACTIONS" = '[]'; then
+            echo 'No JavaScript actions affected.'
+            exit 0
+          fi
+          test "$QUALITY" = success
+          test "$TEST" = success
+          test "$BUILD" = success
+          if test "$EXPECT_SMOKE" = true; then
+            test "$SMOKE" = success
+          fi
+          if test "$EXPECT_NPM_SMOKE" = true; then
+            test "$NPM_SMOKE" = success
+          fi

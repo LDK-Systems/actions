@@ -9,10 +9,11 @@ describe('renderTemplate', () => {
     });
 
     it('replaces multiple different placeholders in one template', () => {
-      const result = renderTemplate(
-        '{{greeting}}, {{name}}! Version {{version}}.',
-        { greeting: 'Hi', name: 'Alice', version: '1.0.0' }
-      );
+      const result = renderTemplate('{{greeting}}, {{name}}! Version {{version}}.', {
+        greeting: 'Hi',
+        name: 'Alice',
+        version: '1.0.0',
+      });
       expect(result).toBe('Hi, Alice! Version 1.0.0.');
     });
 
@@ -136,9 +137,7 @@ describe('renderTemplate', () => {
     });
 
     it('throws on mismatched block helper close tag', () => {
-      expect(() =>
-        renderTemplate('{{#if x}}content{{/each}}', { x: 'yes' })
-      ).toThrow();
+      expect(() => renderTemplate('{{#if x}}content{{/each}}', { x: 'yes' })).toThrow();
     });
   });
 });

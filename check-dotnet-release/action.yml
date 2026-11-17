@@ -1,0 +1,53 @@
+name: 'Check .NET Release'
+description: 'Evaluates a .NET project version and checks for its exact GitHub release and Git tag'
+inputs:
+  project-file:
+    description: 'Path to the trusted checked-out .csproj, .fsproj or .vbproj'
+    required: true
+  configuration:
+    description: 'MSBuild configuration used for property evaluation'
+    required: false
+    default: 'Release'
+  target-framework:
+    description: 'Optional target framework for conditional project versions'
+    required: false
+  release-tag-prefix:
+    description: 'Literal prefix prepended to Version (e.g. v, routing/v or an empty string)'
+    required: false
+    default: 'v'
+  repository:
+    description: 'GitHub repository to query, in owner/repo format'
+    required: false
+    default: ${{ github.repository }}
+  token:
+    description: 'GitHub token with contents read permission for the target repository'
+    required: false
+    default: ${{ github.token }}
+outputs:
+  version:
+    description: 'Evaluated MSBuild Version'
+  version-prefix:
+    description: 'Evaluated VersionPrefix or empty'
+  version-suffix:
+    description: 'Evaluated VersionSuffix or empty'
+  package-version:
+    description: 'Evaluated PackageVersion or empty'
+  tag:
+    description: 'Exact release tag queried'
+  exists:
+    description: 'Whether a matching GitHub release visible to the token exists'
+  tag-exists:
+    description: 'Whether the corresponding Git tag exists independently of the release'
+  release-id:
+    description: 'Numeric release ID or empty'
+  release-url:
+    description: 'Existing release URL or empty'
+  release-name:
+    description: 'Existing release name or empty'
+  draft:
+    description: 'Whether the matching release is a draft (empty if none)'
+  prerelease:
+    description: 'Whether the matching release is a prerelease (empty if none)'
+runs:
+  using: 'node24'
+  main: 'dist/index.js'

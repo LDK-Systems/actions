@@ -25,7 +25,7 @@ export function parseXmlDocument(xml: string, options?: ParseOptions): Record<st
     result = parser.parse(xml) as Record<string, unknown>;
   } catch (error) {
     throw new Error(
-      `Failed to parse XML: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to parse XML: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
 

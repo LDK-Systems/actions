@@ -6,7 +6,10 @@
     "build": "ncc build src/index.ts -o dist --source-map --license licenses.txt --transpile-only"
   },
   "dependencies": {
-    "@actions/core": "^1.10.0",
+    "@actions/core": "^3.0.1",
     "@ldk-systems/lib": "*"
+  },
+  "volta": {
+    "extends": "../package.json"
   }
 }

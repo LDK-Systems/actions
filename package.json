@@ -4,25 +4,29 @@
   "workspaces": [
     "extract-dotnet-version",
     "check-release-version",
+    "check-dotnet-release",
     "generate-release-notes",
     "render-template",
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build --workspaces --if-present",
+    "build": "node scripts/clean-dist.mjs && npm run build --workspaces --if-present",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "typecheck": "tsc --build",
+    "typecheck": "tsc --project tsconfig.typecheck.json",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"**/*.ts\"",
-    "format:check": "prettier --check \"**/*.ts\""
+    "format:check": "prettier --check \"**/*.ts\"",
+    "check:dist": "node scripts/check-dist.mjs",
+    "clean:dist": "node scripts/clean-dist.mjs",
+    "test:ci-tools": "node --test scripts/*.test.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
-    "@types/node": "^25.9.1",
+    "@types/node": "^24.0.0",
     "@vercel/ncc": "^0.38.0",
-    "@vitest/coverage-v8": "^2.0.0",
+    "@vitest/coverage-v8": "5.1.0",
     "eslint": "^9.0.0",
     "eslint-config-prettier": "^10.0.0",
     "eslint-plugin-jsdoc": "^50.0.0",
@@ -30,6 +34,10 @@
     "prettier": "^3.0.0",
     "typescript": "^5.4.0",
     "typescript-eslint": "^8.0.0",
-    "vitest": "^2.0.0"
+    "vitest": "5.1.0"
+  },
+  "volta": {
+    "node": "24.22.3",
+    "npm": "11.19.1"
   }
 }

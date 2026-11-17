@@ -1,0 +1,15 @@
+{
+  "name": "@ldk-systems/check-dotnet-release",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "ncc build src/index.ts -o dist --source-map --license licenses.txt --transpile-only"
+  },
+  "dependencies": {
+    "@actions/core": "^3.0.1",
+    "@ldk-systems/lib": "*"
+  },
+  "volta": {
+    "extends": "../package.json"
+  }
+}
